@@ -34,7 +34,7 @@ DB_NAME=<Database name>
 DB_USER=<Database Username>
 DB_PASSWORD=<Database Password>
 PORT=8080
-# The "TOKEN_SECRET" is for JSONwebtoken and will 
+# The "TOKEN_SECRET" is for JSONwebtoken and will be needed if a route requires an authorization token.
 TOKEN_SECRET=<Custom Token>
 ````
 3. Start server locally
@@ -81,7 +81,7 @@ npm start
 ````
 ### Mongoose
 
-````json
+````ruby
     first_name: {
         type: String,
         required:true,

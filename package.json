@@ -1,0 +1,34 @@
+{
+  "name": "nodejs-express-mongodb",
+  "version": "1.0.0",
+  "description": "Node.js Restful CRUD API with Express and MongoDB",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb",
+    "rest",
+    "api"
+  ],
+  "author": "JohnWilbert",
+  "license": "ISC",
+  "dependencies": {
+    "@hapi/joi": "^17.1.1",
+    "apicache": "^1.6.3",
+    "axios": "^1.1.3",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.1",
+    "cookie-session": "^2.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "ejs": "^3.1.8",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.6.7",
+    "nodemon": "^2.0.20"
+  }
+}

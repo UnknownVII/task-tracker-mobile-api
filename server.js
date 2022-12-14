@@ -5,9 +5,9 @@ var cors = require('cors')
 const verify = require('./app/verify-token');
 
 //API CACHE
-const apicache = require('apicache');
-let cache = apicache.middleware;
-app.use(cache('5 minutes'));
+// const apicache = require('apicache');
+// let cache = apicache.middleware;
+// app.use(cache('5 minutes'));
 
 const port = process.env.PORT || 8080;
 

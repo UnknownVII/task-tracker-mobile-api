@@ -7,7 +7,7 @@ const {
 } = require('../../app/validate');
 
 //GET ALL OBJECTS with Query of limit and page
-router.get('/all-objects', async (req, res) => {
+router.get('/all-objects', verify, async (req, res) => {
     let {limit = 10, page = 1} = req.query;
     const limitData = parseInt(limit);
     const skip = (page - 1) * limit;
@@ -26,7 +26,7 @@ router.get('/all-objects', async (req, res) => {
 });
 
 //CREATE NEW OBJECT
-router.post('/new', async (req, res) => {
+router.post('/new', verify, async (req, res) => {
     //VALIDATION OF DATA 
     const {
         error
@@ -58,7 +58,7 @@ router.post('/new', async (req, res) => {
 
 //DELETE SPECIFIC OBJECTS
 
-router.delete('/delete/:id', async (req, res) => {
+router.delete('/delete/:id', verify, async (req, res) => {
     const result = await Objects.findByIdAndDelete({
         _id: req.params.id
     });

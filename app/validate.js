@@ -1,16 +1,13 @@
-const Joi = require('@hapi/joi');
+const Joi = require("@hapi/joi");
 
 //OBJECT VALIDATION
 const objectValidation = (data) => {
-    const schema = Joi.object({
-        first_name: Joi.string()
-            .min(3)
-            .required(),
-        last_name: Joi.string()
-            .min(3)
-            .required(),
-    });
-    return schema.validate(data);
-}
+  const schema = Joi.object({
+    text: Joi.string().required(),
+    day: Joi.string().required(),
+    reminder: Joi.bool(),
+  });
+  return schema.validate(data);
+};
 
 module.exports.objectValidation = objectValidation;

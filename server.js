@@ -13,6 +13,8 @@ const port = process.env.PORT || 8080;
 
 //Import Routes
 const objectsRoute = require('./src/routes/objects');
+const usersRoute = require('./src/routes/users');
+
 
 dotenv.config();
 
@@ -39,3 +41,4 @@ app.get("/", verify, (req, res) => {
 
 //Route Middleware
 app.use('/test', objectsRoute);
+app.use('/user', usersRoute);

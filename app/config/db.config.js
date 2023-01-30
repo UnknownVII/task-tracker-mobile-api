@@ -2,15 +2,18 @@ const { connect, connection } = require("mongoose");
 const { config } = require("dotenv");
 const jwt = require('jsonwebtoken');
 
+
+
 module.exports = () => {
   config();
   const uri = process.env.DB_URI || "";
   const dbName = process.env.DB_NAME || "";
-
+  connect.set('strictQuery', false);
   connect(uri, {
     dbName,
     user: process.env.DB_USER || "",
     pass: process.env.DB_PASSWORD || "",
+    
   })
     .then(() => {
       console.log(

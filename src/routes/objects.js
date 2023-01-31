@@ -10,9 +10,9 @@ router.get("/all-objects", verify, async (req, res) => {
   const limitData = parseInt(limit);
   const skip = (page - 1) * limit;
   try {
-    const tasks = await Objects.find().limit(limitData).skip(skip);
-    if (tasks != 0) {
-      res.json({ page: page, limit: limit, tasks });
+    const students = await Objects.find().limit(limitData).skip(skip);
+    if (students != 0) {
+      res.json({ students });
     } else {
       return res.status(400).json({ error: "DB is empty" });
     }

@@ -91,8 +91,8 @@ router.get("/get/:id", verify, async (req, res) => {
 //UDPATE A SPECIFIC OBJECT
 router.patch("/update/:id", verify, async (req, res) => {
   //VALIDATION OF DATA
-  //   const { error } = objectValidation(req.body);
-  //   if (error) return res.status(400).json({ error: error.details[0].message });
+  // const { error } = taskValidation(req.body);
+  // if (error) return res.status(400).json({ error: error.details[0].message });
 
   //CHECK IF OBJECT WILL BE DUPLICATED
   const objectExist = await Tasks.findOne({

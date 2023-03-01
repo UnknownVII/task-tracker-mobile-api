@@ -20,18 +20,22 @@ const loginValidation = (data) => {
 };
 
 //OBJECT VALIDATION
-const objectValidation = (data) => {
+const taskValidation = (data) => {
   const schema = Joi.object({
-    first_name: Joi.string().required(),
-    last_name: Joi.string().required(),
-    age: Joi.string().required(),
-    course: Joi.string().required(),
-    year_level: Joi.string().required(),
-    subjects: Joi.array().items(Joi.string().min(3)).required(),
+    title: Joi.string().min(3).max(20).required(),
+    description: Joi.string().min(3).max(250).required(),
+    due_date: Joi.date().required(),
+    start_time: Joi.string(),
+    end_time: Joi.string(),
+    prioritize: Joi.boolean(),
+    completed: Joi.boolean(),
+    date_finished: Joi.date(),
+    time_finished: Joi.date(),
+    date_created: Joi.date(),
   });
   return schema.validate(data);
 };
 
-module.exports.objectValidation = objectValidation;
+module.exports.taskValidation = taskValidation;
 module.exports.loginValidation = loginValidation;
 module.exports.registerValidation = registerValidation;

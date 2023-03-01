@@ -16,13 +16,13 @@ module.exports = () => {
       console.log(
         "[Finished] Connection estabislished with MongoDB Successfully"
       );
-      //CREATE AND ASSIGN TOKEN
-      // const token = jwt.sign( "tempID" ,
-      //   process.env.TOKEN_SECRET
-      // );
-      // console.log(
-      //   "[Token   ]", token
-      // );
+      // CREATE AND ASSIGN TOKEN
+      const token = jwt.sign( "tempID" ,
+        process.env.TOKEN_SECRET
+      );
+      console.log(
+        "[Token   ]", token
+      );
     })
     .catch((error) => console.error(error.message));
 

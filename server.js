@@ -12,7 +12,7 @@ const verify = require('./app/verify-token');
 const port = process.env.PORT || 8080;
 
 //Import Routes
-const objectsRoute = require('./src/routes/objects');
+const tasksRoute = require('./src/routes/tasks');
 const usersRoute = require('./src/routes/users');
 
 
@@ -40,5 +40,5 @@ app.get("/", verify, (req, res) => {
 });
 
 //Route Middleware
-app.use('/test', objectsRoute);
+app.use('/task', tasksRoute);
 app.use('/user', usersRoute);

@@ -1,14 +1,6 @@
 {
-    "version": 2,
-    "name": "shopping-cart-api",
-    "builds": [
-       { "src": "server.js", "use": "@vercel/node" }
-    ],
-    "routes": [
-       { "src": "/(.*)", "dest": "/server.js" }
-    ],  
-    "crons": [{
-      "path": "/api/cron",
-      "schedule": "*/15 * * * *"
-    }]
- }
+  "version": 2,
+  "name": "shopping-cart-api",
+  "builds": [{ "src": "server.js", "use": "@vercel/node" }],
+  "routes": [{ "src": "/(.*)", "dest": "/server.js" }]
+}

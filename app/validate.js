@@ -22,15 +22,14 @@ const loginValidation = (data) => {
 //OBJECT VALIDATION
 const taskValidation = (data) => {
   const schema = Joi.object({
-    title: Joi.string().min(3).max(20).required(),
-    description: Joi.string().min(3).max(250).required(),
-    due_date: Joi.date().required(),
-    start_time: Joi.string(),
-    end_time: Joi.string(),
+    title: Joi.string().min(3).max(20),
+    description: Joi.string().min(3).max(250),
+    due_date: Joi.date(),
+    start_time: Joi.string().allow(null).allow(""),
+    end_time: Joi.string().allow(null).allow(""),
     prioritize: Joi.boolean(),
-    completed: Joi.boolean(),
-    date_finished: Joi.date(),
-    time_finished: Joi.date(),
+    status: Joi.string(),
+    date_time_finished: Joi.date().allow(null).allow(""),
     date_created: Joi.date(),
   });
   return schema.validate(data);

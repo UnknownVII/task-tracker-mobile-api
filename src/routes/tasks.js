@@ -1,144 +1,256 @@
 const router = require("express").Router();
-const Tasks = require("../../models/tasks_model");
+const User = require("../../models/user_model");
 const verify = require("../../app/verify-token");
+const moment = require("moment");
 
 const { taskValidation } = require("../../app/validate");
 
-//GET ALL Tasks with Query of limit and page
-router.get("/all-tasks", verify, async (req, res) => {
+router.get("/get/:id/all-tasks", verify, async (req, res) => {
   let { limit, page } = req.query;
   const limitData = parseInt(limit);
   const skip = (page - 1) * limit;
-  try {
-    const tasks = await Tasks.find().limit(limitData).skip(skip);
-    if (tasks != 0) {
-      res.json({ tasks });
-    } else {
-      return res.status(400).json({ error: "DB is empty" });
-    }
-  } catch (err) {
-    res.status(400).json({ message: err });
-  }
+
+  const tasks = await User.findById(req.params.id)
+    .limit(limitData)
+    .skip(skip)
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({ message: "User does not exists" });
+      } else {
+        if (user.tasks != 0) {
+          return res.status(200).json({ tasks: user.tasks });
+        } else {
+          return res.status(200).json({ message: "Tasks is empty" });
+        }
+      }
+    })
+    .catch((error) => {
+      if (res.headersSent) {
+        return;
+      }
+      return res.status(500).json({ error: error.message });
+    });
 });
 
 //CREATE NEW OBJECT
-router.post("/new", verify, async (req, res) => {
+router.post("/create/:id/new-task", verify, async (req, res) => {
   //VALIDATION OF DATA
   const { error } = taskValidation(req.body);
-  if (error) return res.status(400).send(error.details[0].message);
-
-  //CHECK IF OBJECT ALREADY EXIST
-  // const objectExists = await Tasks.findOne({
-  //   first_name: req.body.first_name,
-  //   last_name: req.body.last_name,
-  // });
-  // if (objectExists)
-  //   return res.status(400).json({ error: "Object Already Exists" });
+  if (error) return res.status(400).json({ error: error.details[0].message });
 
   //CREATING CONTACT
 
-  const object = new Tasks({
-    title: req.body.title,
-    description: req.body.description,
-    due_date: req.body.due_date,
-    start_time: req.body.start_time,
-    end_time: req.body.end_time,
-    prioritize: req.body.prioritize,
-    completed: req.body.completed,
-    date_finished: req.body.date_finished,
-    time_finished: req.body.time_finished,
-  });
+  const savedUser = await User.findById(req.params.id)
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({ message: "User does not exists" });
+      }
+      const newTask = {
+        title: req.body.title,
+        description: req.body.description,
+        due_date: req.body.due_date,
+        start_time: req.body.start_time,
+        end_time: req.body.end_time,
+        prioritize: req.body.prioritize,
+        completed: req.body.completed,
+        date_time_finished: req.body.date_time_finished,
+      };
+      user.tasks.push(newTask);
+      return user.save();
+    })
+    .then(() => {
+      if (res.headersSent) {
+        return;
+      }
+      return res.status(200).json({ message: "Task added successfully" });
+    })
+    .catch((error) => {
+      if (res.headersSent) {
+        return;
+      }
+      return res.status(500).json({ error: error.message });
+    });
+});
 
-  try {
-    const savedUser = await object.save();
-    res.send(savedUser);
-  } catch (err) {
-    res.status(400).send(err);
-  }
+//UDPATE A SPECIFIC TASKS
+router.patch("/update/:id/user-task/:task_id", verify, async (req, res) => {
+  //VALIDATION OF DATA
+  const { error } = taskValidation(req.body);
+  if (error) return res.status(400).json({ error: error.details[0].message });
+
+  User.findById(req.params.id)
+    .then(async (user) => {
+      if (!user) {
+        return res.status(404).json({ message: "User does not exists" });
+      }
+
+      const taskIndex = user.tasks.findIndex(
+        (task) => task._id.toString() === req.params.task_id
+      );
+
+      if (taskIndex === -1) {
+        return res.status(404).json({
+          error:
+            "Cannot Update ID[" +
+            req.params.task_id +
+            "] does not Exists or has been deleted",
+        });
+      }
+
+      // check if the new title and description values are already taken by another task of the user
+      const titleTaken = user.tasks.some(
+        (task) =>
+          task.title === req.body.title && task.id !== req.params.task_id
+      );
+      const descriptionTaken = user.tasks.some(
+        (task) =>
+          task.description === req.body.description &&
+          task.id !== req.params.task_id
+      );
+
+      if (titleTaken && descriptionTaken) {
+        return res.status(400).json({
+          error: "Title or description already taken by another task.",
+        });
+      }
+
+      const existingTask = user.tasks[taskIndex];
+      const checkExisting =
+        req.body.title === existingTask.title &&
+        req.body.description === existingTask.description &&
+        new Date(req.body.due_date).toISOString() ===
+          existingTask.due_date.toISOString() &&
+        req.body.start_time === existingTask.start_time &&
+        req.body.end_time === existingTask.end_time &&
+        req.body.prioritize === existingTask.prioritize;
+
+      if (checkExisting) {
+        return res
+          .status(200)
+          .json({ message: "No changes were made to the task" });
+      }
+
+      user.tasks[taskIndex].title =
+        req.body.title || user.tasks[taskIndex].title;
+      user.tasks[taskIndex].description =
+        req.body.description || user.tasks[taskIndex].description;
+      user.tasks[taskIndex].due_date =
+        req.body.due_date || user.tasks[taskIndex].due_date;
+      user.tasks[taskIndex].start_time =
+        req.body.start_time || user.tasks[taskIndex].start_time;
+      user.tasks[taskIndex].end_time =
+        req.body.end_time || user.tasks[taskIndex].end_time;
+      user.tasks[taskIndex].prioritize =
+        req.body.prioritize !== undefined
+          ? req.body.prioritize
+          : user.tasks[taskIndex].prioritize;
+
+      user.tasks[taskIndex].status =
+        req.body.status || user.tasks[taskIndex].status;
+
+      if (typeof req.body.status !== "undefined") {
+        user.tasks[taskIndex].date_time_finished =
+          req.body.status === "Complete" ? moment().format() : null;
+      }
+
+      await user.save();
+    })
+    .then(() => {
+      if (res.headersSent) {
+        return;
+      }
+      return res.status(200).json({
+        message: "ID[" + req.params.task_id + "] Updated Successfully",
+      });
+    })
+    .catch((error) => {
+      if (res.headersSent) {
+        return;
+      }
+      return res.status(500).json({ error: error.message });
+    });
 });
 
 //DELETE SPECIFIC Tasks
 
-router.delete("/delete/:id", verify, async (req, res) => {
-  const result = await Tasks.findByIdAndDelete({
-    _id: req.params.id,
-  });
-  if (result != null) {
-    return res
-      .status(200)
-      .json({ _id: req.params.id, message: "Deleted Successfully" });
-  } else {
-    return res.status(400).json({
-      error: "ID[" + req.params.id + "]: does not Exists or has been deleted",
-    });
-  }
-});
-
-//GET A SPECIFIC OBJECT
-router.get("/get/:id", verify, async (req, res) => {
-  const result = await Tasks.findById({
-    _id: req.params.id,
-  });
-  if (result != null) {
-    return res.status(200).json(result);
-  } else {
-    return res.status(400).json({
-      error: "ID[" + req.params.id + "]: does not Exists or has been deleted",
-    });
-  }
-});
-
-//UDPATE A SPECIFIC OBJECT
-router.patch("/update/:id", verify, async (req, res) => {
-  //VALIDATION OF DATA
-  // const { error } = taskValidation(req.body);
-  // if (error) return res.status(400).json({ error: error.details[0].message });
-
-  //CHECK IF OBJECT WILL BE DUPLICATED
-  const objectExist = await Tasks.findOne({
-    title: req.body.title,
-    description: req.body.description,
-    due_date: req.body.due_date,
-    start_time: req.body.start_time,
-    end_time: req.body.end_time,
-    prioritize: req.body.prioritize,
-    completed: req.body.completed,
-    date_finished: req.body.date_finished,
-    time_finished: req.body.time_finished,
-    _id: {
-      $ne: req.params.id,
-    },
-  });
-
-  if (objectExist)
-    return res
-      .status(400)
-      .json({ error: "Task with the same values already exists" });
-
-  //UPDATING CONTACT
-  try {
-    const patch = await Tasks.updateOne(
-      {
-        _id: req.params.id,
-      },
-      {
-        $set: {
-          title: req.body.title,
-          description: req.body.description,
-          due_date: req.body.due_date,
-          start_time: req.body.start_time,
-          end_time: req.body.end_time,
-          prioritize: req.body.prioritize,
-          completed: req.body.completed,
-          date_finished: req.body.date_finished,
-          time_finished: req.body.time_finished,
-        },
+router.delete("/delete/:id/user-task/:task_id", verify, async (req, res) => {
+  const result = await User.findById(req.params.id)
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({ message: "User does not exists" });
       }
-    );
-    res.json({ message: "Object ID[" + req.params.id + "] Updated" });
-  } catch (err) {
-    res.status(400).json({ error: err });
-  }
+
+      const taskIndex = user.tasks.findIndex(
+        (task) => task._id.toString() === req.params.task_id
+      );
+
+      if (taskIndex === -1) {
+        return res.status(404).json({
+          error:
+            "ID[" +
+            req.params.task_id +
+            "] does not Exists or has been deleted",
+        });
+      }
+      user.tasks.splice(taskIndex, 1);
+      return user.save();
+    })
+    .then(() => {
+      if (res.headersSent) {
+        return;
+      }
+      return res.status(200).json({
+        message: "ID[" + req.params.task_id + "] Deleted Successfully",
+      });
+    })
+    .catch((error) => {
+      if (res.headersSent) {
+        return;
+      }
+      return res.status(500).json({ error: error.message });
+    });
+});
+
+//GET SPECIFIC Tasks
+
+router.get("/get/:id/user-task/:task_id", verify, async (req, res) => {
+  const result = await User.findById(req.params.id)
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({ message: "User does not exists" });
+      }
+
+      const taskIndex = user.tasks.findIndex(
+        (task) => task._id.toString() === req.params.task_id
+      );
+
+      if (taskIndex === -1) {
+        return res.status(404).json({
+          error:
+            "ID[" +
+            req.params.task_id +
+            "] does not Exists or has been deleted",
+        });
+      }
+      const task = user.tasks.find(
+        (task) => task._id.toString() === req.params.task_id
+      );
+      return res.status(200).json(task);
+    })
+    .then(() => {
+      if (res.headersSent) {
+        return;
+      }
+      return res.status(200).json({
+        message: "ID[" + req.params.task_id + "] Deleted Successfully",
+      });
+    })
+    .catch((error) => {
+      if (res.headersSent) {
+        return;
+      }
+      return res.status(500).json({ error: error.message });
+    });
 });
 
 module.exports = router;

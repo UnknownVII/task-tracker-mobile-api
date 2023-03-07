@@ -6,22 +6,42 @@ const moment = require("moment");
 const { taskValidation } = require("../../app/validate");
 
 router.get("/get/:id/all-tasks", verify, async (req, res) => {
-  let { limit, page } = req.query;
+  let { limit, page, status, prioritize } = req.query;
   const limitData = parseInt(limit);
   const skip = (page - 1) * limit;
 
-  const tasks = await User.findById(req.params.id)
+  const query = {};
+  if (status) {
+    query.status = status;
+  }
+  if (prioritize) {
+    query.prioritize = prioritize === "true";
+  }
+
+  const projection = {
+    tasks: {
+      $filter: {
+        input: "$tasks",
+        as: "task",
+        cond: {
+          $and: Object.entries(query).map(([key, value]) => {
+            return { $eq: [`$$task.${key}`, value] };
+          }),
+        },
+      },
+    },
+  };
+
+  const tasks = await User.findById(req.params.id, projection)
     .limit(limitData)
     .skip(skip)
     .then((user) => {
       if (!user) {
-        return res.status(404).json({ message: "User does not exists" });
+        return res.status(404).json({ message: "User does not exist" });
+      } else if (!user.tasks || user.tasks.length === 0) {
+        return res.status(200).json({ message: "Tasks are empty" });
       } else {
-        if (user.tasks != 0) {
-          return res.status(200).json({ tasks: user.tasks });
-        } else {
-          return res.status(200).json({ message: "Tasks is empty" });
-        }
+        return res.status(200).json({ tasks: user.tasks });
       }
     })
     .catch((error) => {
@@ -31,7 +51,6 @@ router.get("/get/:id/all-tasks", verify, async (req, res) => {
       return res.status(500).json({ error: error.message });
     });
 });
-
 //CREATE NEW OBJECT
 router.post("/create/:id/new-task", verify, async (req, res) => {
   //VALIDATION OF DATA

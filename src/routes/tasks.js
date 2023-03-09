@@ -261,7 +261,7 @@ router.get("/get/:id/user-task/:task_id", verify, async (req, res) => {
         return;
       }
       return res.status(200).json({
-        message: "ID[" + req.params.task_id + "] Deleted Successfully",
+        tasks: user.tasks,
       });
     })
     .catch((error) => {

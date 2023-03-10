@@ -191,7 +191,6 @@ router.patch("/update/:id/user-task/:task_id", verify, async (req, res) => {
 });
 
 //DELETE SPECIFIC Tasks
-
 router.delete("/delete/:id/user-task/:task_id", verify, async (req, res) => {
   const result = await User.findById(req.params.id)
     .then((user) => {
@@ -231,7 +230,6 @@ router.delete("/delete/:id/user-task/:task_id", verify, async (req, res) => {
 });
 
 //GET SPECIFIC Tasks
-
 router.get("/get/:id/user-task/:task_id", verify, async (req, res) => {
   const result = await User.findById(req.params.id)
     .then((user) => {

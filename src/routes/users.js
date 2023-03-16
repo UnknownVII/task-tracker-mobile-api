@@ -223,7 +223,7 @@ router.get("/get/:id", verify, async (req, res) => {
     const taskCount = user.tasks.length;
 
     return res.status(200).json({
-      "user-data": {
+      "user_data": {
         name,
         email,
         date,

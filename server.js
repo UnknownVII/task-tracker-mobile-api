@@ -1,8 +1,19 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const dotenv = require('dotenv');
-var cors = require('cors')
-const verify = require('./app/verify-token');
+const { config } = require("dotenv");
+var cors = require("cors");
+const verify = require("./utils/verify-token");
+const { engine } = require("express-handlebars");
+
+
+app.engine("handlebars", engine());
+app.set("view engine", "handlebars");
+app.set("views", "./emails");
+
+app.use("/images", express.static(__dirname + "/emails/images"));
+app.use('/favicon.ico', express.static(__dirname + '/emails/images/favicon.ico'));
+
+config();
 
 //API CACHE
 // const apicache = require('apicache');
@@ -12,18 +23,16 @@ const verify = require('./app/verify-token');
 const port = process.env.PORT || 8080;
 
 //Import Routes
-const tasksRoute = require('./src/routes/tasks');
-const usersRoute = require('./src/routes/users');
-
-
-dotenv.config();
+const authRoute = require("./src/routes/auth");
+const tasksRoute = require("./src/routes/tasks");
+const usersRoute = require("./src/routes/users");
 
 app.listen(port, () => {
-    console.log('[Port    ] Server is running [', port, ']');
+  console.log("[Port    ] Server is running [", port, "]");
 });
 
 //Connect to DB
-require('./app/config/db.config')();
+require("./utils/config/db.config")();
 
 //Middlewares
 app.use(cors());
@@ -36,9 +45,24 @@ app.use(express.urlencoded({ extended: true }));
 
 // simple route
 app.get("/", verify, (req, res) => {
-    res.json({ message: "HELLO WORLDOOO" });
+  res.json({ message: "HELLO WORLDOOO" });
 });
 
 //Route Middleware
-app.use('/task', tasksRoute);
-app.use('/user', usersRoute);
+app.use("/api", authRoute);
+app.use("/task", tasksRoute);
+app.use("/user", usersRoute);
+
+//OAuth2.0
+const { google } = require("googleapis");
+const OAuth2Google = google.auth.OAuth2;
+
+const oauth2Client = new OAuth2Google(
+  process.env.CLIENT_ID,
+  process.env.CLIENT_SECRET,
+  `http://localhost:8080/api${process.env.REDIRECT_URL}`
+);
+
+oauth2Client.setCredentials({
+  refresh_token: process.env.REFRESH_TOKEN,
+});

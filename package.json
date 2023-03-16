@@ -28,9 +28,15 @@
     "dotenv": "^16.0.3",
     "ejs": "^3.1.8",
     "express": "^4.18.2",
+    "express-handlebars": "^7.0.2",
+    "google-auth-library": "^8.7.0",
+    "googleapis": "^112.0.0",
     "jsonwebtoken": "^9.0.0",
     "moment": "^2.29.4",
-    "mongoose": "^6.6.7"
+    "mongoose": "^6.6.7",
+    "nodemailer": "^6.9.1",
+    "nodemailer-express-handlebars": "^6.1.0",
+    "serve-favicon": "^2.5.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"

@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
+const moment = require("moment");
 
-const ObjectSchema = new mongoose.Schema({
+const taskSchema = new mongoose.Schema({
   title: { type: String, required: true, min: 3, max: 20 },
   description: { type: String, required: true, min: 3, max: 250 },
   due_date: { type: Date, required: true },
@@ -17,6 +18,40 @@ const ObjectSchema = new mongoose.Schema({
   date_created: { type: Date, default: Date.now, required: true },
 });
 
+const tokenSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ["emailVerification", "passwordReset", "userAccessToken"],
+    required: true,
+  },
+  token: {
+    type: String,
+    required: true,
+  },
+  expiresAt: {
+    type: Date,
+    required: true,
+    default: function () {
+      if (this.type === "userAccessToken") {
+        return moment().add(7, "days").toDate();
+      } else if (this.type === "emailVerification") {
+        return moment().add(1, "hour").toDate();
+      } else {
+        return moment().add(5, "minutes").toDate();
+      }
+    },
+  },
+  used: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    required: true,
+  },
+});
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -24,19 +59,33 @@ const userSchema = new mongoose.Schema({
     min: 6,
     max: 255,
   },
+
   email: {
     type: String,
     required: true,
     min: 6,
     max: 255,
   },
+
   password: {
     type: String,
     required: true,
     min: 6,
     max: 1024,
   },
-  tasks: [ObjectSchema],
+  tasks: [taskSchema],
+  tokens: [tokenSchema],
+  emailVerified: {
+    type: Boolean,
+    default: false,
+  },
+  verificationEmailSentDate: {
+    type: Date,
+  },
+  isLocked: {
+    type: Boolean,
+    default: false,
+  },
   date: {
     type: Date,
     default: Date.now,

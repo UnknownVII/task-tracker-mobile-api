@@ -1,9 +1,8 @@
 const router = require("express").Router();
 const User = require("../../models/user_model");
-const verify = require("../../app/verify-token");
+const verify = require("../../utils/verify-token");
 const moment = require("moment");
-
-const { taskValidation } = require("../../app/validate");
+const { taskValidation } = require("../../utils/validate");
 
 router.get("/get/:id/all-tasks", verify, async (req, res) => {
   let { limit, page, status, prioritize } = req.query;
@@ -38,6 +37,8 @@ router.get("/get/:id/all-tasks", verify, async (req, res) => {
     .then((user) => {
       if (!user) {
         return res.status(404).json({ message: "User does not exist" });
+      } else if (user.isLocked) {
+        return res.status(403).json({ message: "User is locked" });
       } else if (!user.tasks || user.tasks.length === 0) {
         return res.status(200).json({ message: "Tasks are empty" });
       } else {
@@ -64,6 +65,11 @@ router.post("/create/:id/new-task", verify, async (req, res) => {
       if (!user) {
         return res.status(404).json({ message: "User does not exists" });
       }
+
+      if (user.isLocked) {
+        return res.status(403).json({ message: "User is locked" });
+      }
+
       const newTask = {
         title: req.body.title,
         description: req.body.description,
@@ -101,6 +107,10 @@ router.patch("/update/:id/user-task/:task_id", verify, async (req, res) => {
     .then(async (user) => {
       if (!user) {
         return res.status(404).json({ message: "User does not exists" });
+      }
+
+      if (user.isLocked) {
+        return res.status(403).json({ message: "User is locked" });
       }
 
       const taskIndex = user.tasks.findIndex(
@@ -198,6 +208,10 @@ router.delete("/delete/:id/user-task/:task_id", verify, async (req, res) => {
         return res.status(404).json({ message: "User does not exists" });
       }
 
+      if (user.isLocked) {
+        return res.status(403).json({ message: "User is locked" });
+      }
+
       const taskIndex = user.tasks.findIndex(
         (task) => task._id.toString() === req.params.task_id
       );
@@ -235,6 +249,10 @@ router.get("/get/:id/user-task/:task_id", verify, async (req, res) => {
     .then((user) => {
       if (!user) {
         return res.status(404).json({ message: "User does not exists" });
+      }
+
+      if (user.isLocked) {
+        return res.status(403).json({ message: "User is locked" });
       }
 
       const taskIndex = user.tasks.findIndex(

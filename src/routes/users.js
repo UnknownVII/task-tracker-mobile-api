@@ -1,12 +1,34 @@
 const router = require("express").Router();
+const moment = require("moment");
 const User = require("../../models/user_model");
+const handlebars = require("nodemailer-express-handlebars");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const verify = require("../../app/verify-token");
-const { registerValidation, loginValidation } = require("../../app/validate");
+const verify = require("../../utils/verify-token");
+
+const { registerValidation, loginValidation } = require("../../utils/validate");
+const { config } = require("dotenv");
+config();
+const nodemailer = require("nodemailer");
+const { getAccessToken } = require("../../utils/oauth-access-token");
+
+let accessToken;
+
+const smtpTransport = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    type: "OAuth2",
+    user: process.env.NODE_MAILER_EMAIL,
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    refreshToken: process.env.REFRESH_TOKEN,
+    accessToken: accessToken,
+  },
+});
 
 //REGISTER
 router.post("/register", async (req, res) => {
+  accessToken = getAccessToken();
   //VALIDATION OF DATA
   const { error } = registerValidation(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
@@ -15,16 +37,19 @@ router.post("/register", async (req, res) => {
   const nameExist = await User.findOne({
     name: req.body.name,
   });
+
   if (nameExist)
     return res.status(400).json({ error: "Username Already Taken" });
   const emailExist = await User.findOne({
     email: req.body.email,
   });
+
   if (emailExist)
     return res.status(400).json({ error: "Email Already Exists" });
 
   //HASH PASSWORDS
-  const salt = await bcrypt.genSalt(10);
+  const saltRounds = 10;
+  const salt = bcrypt.genSaltSync(saltRounds, "aA1!");
   const hashPassword = await bcrypt.hash(req.body.password, salt);
 
   //CREATE NEW USER
@@ -32,49 +57,160 @@ router.post("/register", async (req, res) => {
     name: req.body.name,
     email: req.body.email,
     password: hashPassword,
+    verificationEmailSentDate: null,
   });
+
   try {
     const savedUser = await user.save();
     res.status(200).json({ message: "Account Created Successfully" });
   } catch (err) {
-    res.status(400).json({ error: err });
+    res.status(400).json({ error: err.message });
   }
 });
 
-//LOGIN
+router.post("/send-email-verification/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    const emailVerificationToken = user.tokens.find(
+      (token) => token.type === "emailVerification"
+    );
+
+    if (emailVerificationToken) {
+      if (emailVerificationToken.used) {
+        return res.status(400).send("Email already verified");
+      }
+      if (emailVerificationToken.expiresAt > Date.now()) {
+        return res.status(400).send("Check your email");
+      }
+    }
+
+    const emailToken = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET, {
+      expiresIn: "5m",
+    });
+    const convertedHash = emailToken.toString().replace(/\./g, "*");
+
+    const expiresAt = Date.now() + 300000; // Expires in 5 minutes
+    const tokenIndex = user.tokens.findIndex(
+      (t) => t.type === "emailVerification"
+    );
+
+    if (tokenIndex !== -1) {
+      // Token already exists, update it
+      user.tokens[tokenIndex].token = emailToken;
+      user.tokens[tokenIndex].expiresAt = expiresAt;
+    } else {
+      // Token does not exist, add it
+      user.tokens.push({
+        type: "emailVerification",
+        token: emailToken,
+        expiresAt: expiresAt,
+      });
+    }
+
+    user.verificationEmailSentDate = new Date(); // update verificationEmailSentDate
+
+    // Send email verification email
+    const mailOptions = {
+      from: process.env.NODE_MAILER_EMAIL,
+      to: user.email,
+      subject: "Verify Your Email Address for Task Tracker Application",
+      template: "main",
+      attachments: [
+        {
+          filename: "app-ico-image.png",
+          path: "./emails/images/app-ico-image.png",
+          cid: "imageURL",
+        },
+      ],
+      context: {
+        name: user.name,
+        hash: convertedHash,
+      },
+    };
+    smtpTransport.use(
+      "compile",
+      handlebars({
+        viewEngine: { defaultLayout: false },
+        viewPath: "././emails/",
+        extName: ".handlebars",
+      })
+    );
+    smtpTransport.sendMail(mailOptions, async (error, response) => {
+      if (error) {
+        console.log(error);
+        return res
+          .status(400)
+          .json({ error: "Failed to send verification email" });
+      } else {
+        console.log("Verification email sent:", response.accepted);
+        await user.save();
+        res.status(200).json({ message: "Verification email sent" });
+      }
+      smtpTransport.close();
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal server error");
+  }
+});
+
+//LOGIN USER WITH UNIQUE TOKEN
 router.post("/login", async (req, res) => {
   //VALIDATION OF DATA
   const { error } = loginValidation(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
+
   //CHECK IF EMAIL EXISTS
-  const user = await User.findOne({
-    email: req.body.email,
-  });
-  if (!user) return res.status(400).json({ error: "Email does not exists!" });
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) return res.status(400).json({ error: "Email does not exist!" });
+
   //CHECK IF PASSWORD IS CORRECT
   const validPass = await bcrypt.compare(req.body.password, user.password);
   if (!validPass)
     return res.status(400).json({ error: "Email/Password is wrong!" });
 
-  //CREATE AND ASSIGN TOKEN
-  const token = jwt.sign(
-    {
-      _id: user._id,
-    },
-    process.env.TOKEN_SECRET
+  //CREATE AND ASSIGN TOKENS
+  const accessToken = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET, {
+    expiresIn: "1m",
+  });
+  const userAccessToken = user.tokens.find(
+    (token) => token.type === "userAccessToken"
   );
-  res
-    .status(200)
-    .json({
-      "auth-token": token,
-      message: "Logged in successfully",
-      name: user.name,
-      _id: user._id,
+
+  if (!userAccessToken) {
+    // create a new token if one doesn't exist
+    user.tokens.push({
+      type: "userAccessToken",
+      token: accessToken,
+      expiresAt: moment().add(1, "minutes").toDate(),
     });
+  } else {
+    // update the existing token if it exists
+    userAccessToken.token = accessToken;
+    userAccessToken.used = false;
+    userAccessToken.expiresAt = moment().add(1, "minutes").toDate(); // update the expiration time
+  }
+
+  await user.save((err) => {
+    if (err) {
+      res.status(500).send({ error: "Internal server error" });
+    } else {
+      res.status(200).json({
+        "auth-token": accessToken,
+        message: "Logged in successfully",
+        name: user.name,
+        _id: user._id,
+      });
+    }
+  });
 });
 
-//GETUSERDATA
-
+//GET USER:ID PROFILE
 router.get("/get/:id", verify, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate("tasks");
@@ -96,6 +232,68 @@ router.get("/get/:id", verify, async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+});
+
+//CHECK USER:ID ACCESSTOKEN
+router.get("/:userId/check-token", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId).exec();
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
+    const userAccessToken = user.tokens.find(
+      (token) => token.type === "userAccessToken"
+    );
+    if (!userAccessToken) {
+      return res.send({ message: "User access token not found", valid: false });
+    }
+    try {
+      const decoded = jwt.verify(
+        userAccessToken.token,
+        process.env.TOKEN_SECRET
+      );
+      if (decoded._id !== userId) {
+        return res.send({
+          message: "User access token is invalid",
+          valid: false,
+        });
+      }
+      if (new Date(decoded.exp * 1000) < new Date()) {
+        userAccessToken.used = true;
+        user.save((err) => {
+          if (err) {
+            return res.status(500).send({ error: "Internal server error" });
+          } else {
+            return res.send({
+              message: "User access token has expired",
+              valid: false,
+            });
+          }
+        });
+      }
+      res.send({ message: "User access token is still valid", valid: true });
+    } catch (err) {
+      if (err.name === "TokenExpiredError") {
+        userAccessToken.used = true;
+        user.save((err) => {
+          if (err) {
+            return res.status(500).send({ error: "Internal server error" });
+          } else {
+            return res.status(401).json({ error: "Access token has expired" });
+          }
+        });
+      } else {
+        return res.send({
+          error: err.message,
+          valid: false,
+        });
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Internal server error" });
   }
 });
 

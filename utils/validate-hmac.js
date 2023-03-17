@@ -6,7 +6,7 @@ const secret = process.env.API_SECRET;
 
 module.exports = async function validateHMAC(req, res, next) {
   const hmacHeader = req.headers["x-hmac-signature"];
-
+  console.log(hmacHeader);
   if (!hmacHeader) {
     return res
       .status(401)
@@ -14,6 +14,8 @@ module.exports = async function validateHMAC(req, res, next) {
   }
 
   const timestamp = req.headers["x-timestamp"];
+
+
   if (!timestamp) {
     return res
       .status(401)

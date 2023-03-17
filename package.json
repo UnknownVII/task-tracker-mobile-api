@@ -34,8 +34,10 @@
     "jsonwebtoken": "^9.0.0",
     "moment": "^2.29.4",
     "mongoose": "^6.6.7",
+    "node-cron": "^3.0.2",
     "nodemailer": "^6.9.1",
     "nodemailer-express-handlebars": "^6.1.0",
+    "redis": "^4.6.5",
     "serve-favicon": "^2.5.0"
   },
   "devDependencies": {

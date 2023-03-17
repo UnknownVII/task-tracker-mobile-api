@@ -2,19 +2,43 @@ const express = require("express");
 const app = express();
 const { config } = require("dotenv");
 var cors = require("cors");
-const verify = require("./utils/verify-token");
+
 const { engine } = require("express-handlebars");
 
+const validateApiKey = require("./utils/validate-api-key");
+const validateHmac = require("./utils/validate-hmac");
+const { rateLimiter } = require("./utils/rate-limiter");
 
+const deleteOldDocuments = require("./utils/cron-jobs/ip-cleanup");
+
+//CONFIG IMAGE HANDLEBARS ASSESTS
 app.engine("handlebars", engine());
 app.set("view engine", "handlebars");
 app.set("views", "./emails");
 
 app.use("/images", express.static(__dirname + "/emails/images"));
-app.use('/favicon.ico', express.static(__dirname + '/emails/images/favicon.ico'));
+app.use(
+  "/favicon.ico",
+  express.static(__dirname + "/emails/images/favicon.ico")
+);
 
 config();
 
+//CHECK Unused IP's
+const cron = require("node-cron");
+// cron
+//   .schedule("0 0 * * *", () => {
+//     deleteOldDocuments();
+//   })
+//   .start();
+
+//
+cron
+  .schedule("0 * * * * *", () => {
+    deleteOldDocuments();
+  })
+  .start();
+  
 //API CACHE
 // const apicache = require('apicache');
 // let cache = apicache.middleware;
@@ -43,8 +67,12 @@ app.use(express.json());
 //ontent-type - application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true }));
 
-// simple route
-app.get("/", verify, (req, res) => {
+//GLOBAL : API AND HMAC
+app.use("/", validateApiKey, validateHmac);
+app.use("/", rateLimiter);
+
+// BASE route
+app.get("/", (req, res) => {
   res.json({ message: "HELLO WORLDOOO" });
 });
 

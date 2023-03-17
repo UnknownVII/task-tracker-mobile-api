@@ -176,7 +176,7 @@ router.post("/login", async (req, res) => {
 
   //CREATE AND ASSIGN TOKENS
   const accessToken = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET, {
-    expiresIn: "1m",
+    expiresIn: "7d",
   });
   const userAccessToken = user.tokens.find(
     (token) => token.type === "userAccessToken"
@@ -187,13 +187,13 @@ router.post("/login", async (req, res) => {
     user.tokens.push({
       type: "userAccessToken",
       token: accessToken,
-      expiresAt: moment().add(1, "minutes").toDate(),
+      expiresAt: moment().add(7, "days").toDate(),
     });
   } else {
     // update the existing token if it exists
     userAccessToken.token = accessToken;
     userAccessToken.used = false;
-    userAccessToken.expiresAt = moment().add(1, "minutes").toDate(); // update the expiration time
+    userAccessToken.expiresAt = moment().add(7, "days").toDate(); // update the expiration time
   }
 
   await user.save((err) => {

@@ -22,7 +22,7 @@ module.exports = async function (req, res, next) {
       return res.status(401).json({ error: "Invalid access token" });
     }
     if (decoded._id !== req.params.id) {
-      return res.status(401).json({ error: "Unauthorized access" });
+      return res.status(401).json({ error: "Unauthorized access token" });
     }
     next();
   } catch (err) {

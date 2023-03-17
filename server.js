@@ -26,19 +26,19 @@ config();
 
 //CHECK Unused IP's
 const cron = require("node-cron");
+cron
+  .schedule("0 0 * * *", () => {
+    deleteOldDocuments();
+  })
+  .start();
+
+//
 // cron
-//   .schedule("0 0 * * *", () => {
+//   .schedule("0 * * * * *", () => {
 //     deleteOldDocuments();
 //   })
 //   .start();
 
-//
-cron
-  .schedule("0 * * * * *", () => {
-    deleteOldDocuments();
-  })
-  .start();
-  
 //API CACHE
 // const apicache = require('apicache');
 // let cache = apicache.middleware;

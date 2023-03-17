@@ -15,7 +15,6 @@ module.exports = async function validateHMAC(req, res, next) {
 
   const timestamp = req.headers["x-timestamp"];
 
-
   if (!timestamp) {
     return res
       .status(401)
@@ -30,6 +29,7 @@ module.exports = async function validateHMAC(req, res, next) {
     .createHmac("sha256", secret)
     .update(data)
     .digest("hex");
+  console.log(data, "++", signature);
 
   if (hmacHeader !== signature) {
     return res

@@ -8,7 +8,6 @@ const { engine } = require("express-handlebars");
 const validateApiKey = require("./utils/validate-api-key");
 const validateHmac = require("./utils/validate-hmac");
 const { rateLimiter } = require("./utils/rate-limiter");
-const setProtocol = require("./utils/set-protocol");
 
 const deleteOldDocuments = require("./utils/cron-jobs/ip-cleanup");
 
@@ -68,7 +67,6 @@ app.use(express.json());
 //ontent-type - application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true }));
 
-app.use(setProtocol);
 //GLOBAL : API AND HMAC
 app.use("/", validateApiKey, validateHmac);
 app.use("/", rateLimiter);

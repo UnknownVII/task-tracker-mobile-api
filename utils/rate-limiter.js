@@ -5,7 +5,10 @@ const MAX_REQUESTS = 120;
 
 const rateLimiter = (req, res, next) => {
   const ip = req.ip;
-  const url = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+  const isHttps = req.headers["x-forwarded-proto"] === "https";
+  const url = `${isHttps ? "https" : req.protocol}://${req.get("host")}${
+    req.originalUrl
+  }`;
   const timestamp = Date.now();
 
   RateLimiter.findOne({ ip }, (err, doc) => {

@@ -5,7 +5,9 @@ config();
 const secret = process.env.API_SECRET;
 
 module.exports = async function validateHMAC(req, res, next) {
+  const isHttps = req.headers["x-forwarded-proto"] === "https";
   const hmacHeader = req.headers["x-hmac-signature"];
+  console.log(`API KEY: ${secret}`);
   console.log(hmacHeader);
   if (!hmacHeader) {
     return res
@@ -21,9 +23,9 @@ module.exports = async function validateHMAC(req, res, next) {
       .json({ error: "Access denied: Timestamp is missing" });
   }
 
-  const data = `${timestamp}/${req.protocol}://${req.get("host")}${
-    req.originalUrl
-  }`;
+  const data = `${timestamp}/${isHttps ? "https" : req.protocol}://${req.get(
+    "host"
+  )}${req.originalUrl}`;
 
   const signature = crypto
     .createHmac("sha256", secret)

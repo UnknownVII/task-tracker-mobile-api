@@ -10,13 +10,13 @@ module.exports = async function (req, res, next) {
     req.user = decoded;
     const user = await User.findById(req.user._id);
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: "User with the access token not found" });
     }
     const userAccessToken = user.tokens.find(
       (token) => token.type === "userAccessToken"
     );
     if (!userAccessToken) {
-      return res.status(401).json({ error: "User access token not found" });
+      return res.status(401).json({ error: "User's access token not found" });
     }
     if (userAccessToken.token !== token) {
       return res.status(401).json({ error: "Invalid access token" });

@@ -43,14 +43,7 @@
       #u_content_text_5 .v-text-align { text-align: center !important; } }
     </style>
 
-    <script>
-      function verifyEmail(){ const xhr = new XMLHttpRequest();
-      xhr.setRequestHeader("X-HMAC-Signature", hmac);
-      xhr.setRequestHeader("X-Api-Key", apiKey);
-      xhr.setRequestHeader("X-Timestamp", timestamp); }
-    </script>
-
-    <!--[if !mso]><!--><link
+       <!--[if !mso]><!--><link
       href="https://fonts.googleapis.com/css?family=Open+Sans:400,700&display=swap"
       rel="stylesheet"
       type="text/css"
@@ -384,7 +377,6 @@
                                 <div class="v-text-align" align="center">
                                   <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="" style="height:74px; v-text-anchor:middle; width:336px;" arcsize="7%"  stroke="f" fillcolor="#21e6c1"><w:anchorlock/><center style="color:#021632;font-family:arial,helvetica,sans-serif;"><![endif]-->
                                   <a
-                                    onclick="verifyEmail()"
                                     href="https://task-tracker-mobile-api.vercel.app/api/verify/{{hash}}"
                                     target="_blank"
                                     class="v-button v-font-size"
@@ -467,7 +459,6 @@
                                     doesn't work, you can copy and paste the
                                     URL:</p>
                                   <p style="line-height: 180%;">URL:<a
-                                      onclick="verifyEmail()"
                                       rel="noopener"
                                       href="https://task-tracker-mobile-api.vercel.app/api/verify/{{hash}}"
                                       target="_blank"

@@ -80,7 +80,7 @@ router.get("/verify/:token", async (req, res) => {
                 backButtonLink: "/",
               });
             } else {
-              res.render("success", {
+              res.render("main", {
                 pageTitle: "Success",
                 appTitle: "Task Tracker",
                 cardTitle: "Email Verification",

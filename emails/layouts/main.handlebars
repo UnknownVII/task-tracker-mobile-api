@@ -26,7 +26,9 @@
     center; } .outer-container-image { width: 5rem; height: 5rem; color:
     #e4ebf8; } .outer-container-text { color: #e4ebf8; font-size: 2.5rem;
     font-weight: 700; padding-top: 2.5rem; padding-bottom: 2.5rem; padding-left:
-    2.5rem; }
+    2.5rem; } .error{background-color: #FD5066; } .success{ background-color:
+    #21E6C1;}
+
   </style>
   <body>
     <div class="main-container">
@@ -42,8 +44,10 @@
         <div class="card">
           <div class="card-header">{{cardTitle}}</div>
           <div class="card-content">{{{cardContent}}}</div>
-          <button class="card-button">{{buttonText}}</button>
-          <div class="card-footer"></div>
+          {{!-- <button class="card-button">{{buttonText}}</button> --}}
+
+          <div class="card-footer {{contentState}}"></div>
+
         </div>
       </div>
     </div>

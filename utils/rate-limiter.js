@@ -13,7 +13,7 @@ const rateLimiter = (req, res, next) => {
 
   RateLimiter.findOne({ ip }, (err, doc) => {
     if (err) {
-      console.error(err);
+      console.error(`[RLimiter] ${err}`);
       return res.status(500).json({ message: "Internal server error" });
     }
 
@@ -30,7 +30,7 @@ const rateLimiter = (req, res, next) => {
       });
       newDoc.save((err) => {
         if (err) {
-          console.error(err);
+          console.error(`[RLimiter] ${err}`);
           return res.status(500).json({ message: "Internal server error" });
         }
         return next();
@@ -42,12 +42,12 @@ const rateLimiter = (req, res, next) => {
         doc.windowEnd = new Date(now.getTime() + WINDOW_SIZE);
       } else {
         if (doc.requests >= MAX_REQUESTS) {
-          return res.status(429).send("Too Many Requests");
+          return res.status(429).json({ message: "Too Many Requests" });
         }
 
         // Check if the current request is similar to the previous request
         if (doc.url === url && now.getTime() - doc.timestamp.getTime() < 1000) {
-          return res.status(400).send("Bad Request");
+          return res.status(400).json({ message: "Bad Request" });
         }
 
         doc.requests += 1;
@@ -58,7 +58,7 @@ const rateLimiter = (req, res, next) => {
 
       doc.save((err) => {
         if (err) {
-          console.error(err);
+          console.error(`[RLimiter] ${err}`);
           return res.status(500).json({ message: "Internal server error" });
         }
         return next();

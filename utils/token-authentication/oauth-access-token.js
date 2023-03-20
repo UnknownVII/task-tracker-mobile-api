@@ -1,6 +1,6 @@
 const { google } = require("googleapis");
 const OAuth2Google = google.auth.OAuth2;
-const Token = require("../models/token");
+const Token = require("../../models/token");
 const { config } = require("dotenv");
 
 config();

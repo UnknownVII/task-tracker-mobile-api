@@ -8,9 +8,9 @@ const moment = require("moment");
 const nodemailer = require("nodemailer");
 const path = require("path");
 const User = require("../../models/user_model");
-const { getAccessToken } = require("../../utils/oauth-access-token");
-const { registerValidation, loginValidation } = require("../../utils/validate");
-const verify = require("../../utils/verify-token");
+const { getAccessToken } = require("../../utils/token-authentication/oauth-access-token");
+const { registerValidation, loginValidation } = require("../../utils/joi-schema-validation/validate");
+const verify = require("../../utils/token-authentication/verify-token");
 
 const router = express.Router();
 
@@ -82,7 +82,7 @@ router.post("/send-email-verification/:id", async (req, res) => {
     const user = await User.findById(req.params.id);
 
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).json({ message: "User not found" });
     }
 
     const emailVerificationToken = user.tokens.find(
@@ -91,10 +91,10 @@ router.post("/send-email-verification/:id", async (req, res) => {
 
     if (emailVerificationToken) {
       if (emailVerificationToken.used) {
-        return res.status(400).send("Email already verified");
+        return res.status(400).json({ message: "Email already verified" });
       }
       if (emailVerificationToken.expiresAt > Date.now()) {
-        return res.status(400).send("Check your email");
+        return res.status(400).json({ message: "Check your email" });
       }
     }
 
@@ -167,7 +167,7 @@ router.post("/send-email-verification/:id", async (req, res) => {
     });
   } catch (err) {
     console.error(`[MAILER  ] ${err}`);
-    res.status(500).send("Internal server error");
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -208,7 +208,7 @@ router.post("/login", async (req, res) => {
     userAccessToken.expiresAt = moment().add(7, "days").toDate(); // update the expiration time
   }
 
-  await user.save((err) => {
+  user.save((err) => {
     if (err) {
       res.status(500).send({ error: "Internal server error" });
     } else {
@@ -253,13 +253,13 @@ router.get("/:userId/check-token", async (req, res) => {
     const userId = req.params.userId;
     const user = await User.findById(userId).exec();
     if (!user) {
-      return res.status(404).send({ message: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
     const userAccessToken = user.tokens.find(
       (token) => token.type === "userAccessToken"
     );
     if (!userAccessToken) {
-      return res.send({ message: "User access token not found", valid: false });
+      return res.json({ message: "User access token not found", valid: false });
     }
     try {
       const decoded = jwt.verify(
@@ -267,7 +267,7 @@ router.get("/:userId/check-token", async (req, res) => {
         process.env.TOKEN_SECRET
       );
       if (decoded._id !== userId) {
-        return res.send({
+        return res.json({
           message: "User access token is invalid",
           valid: false,
         });
@@ -276,28 +276,28 @@ router.get("/:userId/check-token", async (req, res) => {
         userAccessToken.used = true;
         user.save((err) => {
           if (err) {
-            return res.status(500).send({ error: "Internal server error" });
+            return res.status(500).json({ error: "Internal server error" });
           } else {
-            return res.send({
+            return res.json({
               message: "User access token has expired",
               valid: false,
             });
           }
         });
       }
-      res.send({ message: "User access token is still valid", valid: true });
+      res.json({ message: "User access token is still valid", valid: true });
     } catch (err) {
       if (err.name === "TokenExpiredError") {
         userAccessToken.used = true;
         user.save((err) => {
           if (err) {
-            return res.status(500).send({ error: "Internal server error" });
+            return res.status(500).json({ error: "Internal server error" });
           } else {
             return res.status(401).json({ error: "Access token has expired" });
           }
         });
       } else {
-        return res.send({
+        return res.json({
           error: err.message,
           valid: false,
         });
@@ -305,7 +305,7 @@ router.get("/:userId/check-token", async (req, res) => {
     }
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 

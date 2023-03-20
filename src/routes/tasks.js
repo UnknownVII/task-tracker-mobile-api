@@ -1,8 +1,8 @@
 const moment = require("moment");
 const express = require("express");
 const User = require("../../models/user_model");
-const { taskValidation } = require("../../utils/validate");
-const verify = require("../../utils/verify-token");
+const { taskValidation } = require("../../utils/joi-schema-validation/validate");
+const verify = require("../../utils/token-authentication/verify-token");
 
 const router = express.Router();
 

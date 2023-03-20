@@ -13,7 +13,7 @@ module.exports = () => {
   })
     .then(() => {
       console.log(
-        "[Finished] Connection estabislished with MongoDB Successfully"
+        "[Database] Connection estabislished with MongoDB Successfully"
       );
     })
     .catch((error) => console.error(error.message));

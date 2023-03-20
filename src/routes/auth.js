@@ -2,7 +2,7 @@ const router = require("express").Router();
 
 const { config } = require("dotenv");
 const User = require("../../models/user_model");
-const verifyEmail = require("../../utils/verify-token-email");
+const verifyEmailwithHtml = require("../../utils/rendered/verify-token-email-with-html");
 
 config();
 
@@ -10,7 +10,7 @@ router.get(process.env.REDIRECT_URI, (req, res) => {
   return res.status(200).json({ message: "CALLBACK" });
 });
 
-router.get("/verify/:token", async (req, res) => {
+router.get("/verify/:token", verifyEmailwithHtml, async (req, res) => {
   const tokenValue = req.params.token.replace(/\*/g, ".");
 
   User.findOne(
@@ -22,8 +22,7 @@ router.get("/verify/:token", async (req, res) => {
           appTitle: "Task Tracker",
           cardTitle: "Email Verification",
           cardContent: "Error finding user",
-          buttonText: "Back",
-          backButtonLink: "/",
+          contentState: "error",
         });
       } else if (!user) {
         res.render("main", {
@@ -31,8 +30,7 @@ router.get("/verify/:token", async (req, res) => {
           appTitle: "Task Tracker",
           cardTitle: "Email Verification",
           cardContent: "User not found",
-          buttonText: "Back",
-          backButtonLink: "/",
+          contentState: "error",
         });
       } else {
         const tokenIndex = user.tokens.findIndex((t) => t.token === tokenValue);
@@ -44,8 +42,7 @@ router.get("/verify/:token", async (req, res) => {
             appTitle: "Task Tracker",
             cardTitle: "Email Verification",
             cardContent: "Token not found",
-            buttonText: "Back",
-            backButtonLink: "/",
+            contentState: "error",
           });
         } else if (tokenObj.used) {
           res.render("main", {
@@ -53,8 +50,7 @@ router.get("/verify/:token", async (req, res) => {
             appTitle: "Task Tracker",
             cardTitle: "Email Verification",
             cardContent: "Email is already verified",
-            buttonText: "Back",
-            backButtonLink: "/",
+            contentState: "error",
           });
         } else if (tokenObj.expiresAt < new Date()) {
           res.render("main", {
@@ -62,8 +58,7 @@ router.get("/verify/:token", async (req, res) => {
             appTitle: "Task Tracker",
             cardTitle: "Email Verification",
             cardContent: "Token expired",
-            buttonText: "Resend verification email",
-            backButtonLink: "/resend",
+            contentState: "error",
           });
         } else {
           user.emailVerified = true;
@@ -76,8 +71,7 @@ router.get("/verify/:token", async (req, res) => {
                 appTitle: "Task Tracker",
                 cardTitle: "Email Verification",
                 cardContent: "Error updating user",
-                buttonText: "Back",
-                backButtonLink: "/",
+                contentState: "error",
               });
             } else {
               res.render("main", {
@@ -85,8 +79,7 @@ router.get("/verify/:token", async (req, res) => {
                 appTitle: "Task Tracker",
                 cardTitle: "Email Verification",
                 cardContent: "Your email has been successfully verified.",
-                buttonText: "Continue",
-                backButtonLink: "/",
+                contentState: "success",
               });
             }
           });

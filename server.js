@@ -7,8 +7,8 @@ const schedule = require("node-schedule");
 const authRoute = require("./src/routes/auth");
 const tasksRoute = require("./src/routes/tasks");
 const usersRoute = require("./src/routes/users");
-const validateApiKey = require("./utils/validate-api-key");
-const validateHmac = require("./utils/validate-hmac");
+const validateApiKey = require("./utils/global-authentication/validate-api-key");
+const validateHmac = require("./utils/global-authentication/validate-hmac");
 const { rateLimiter } = require("./utils/rate-limiter");
 const deleteOldDocuments = require("./utils/cron-jobs/ip-cleanup");
 

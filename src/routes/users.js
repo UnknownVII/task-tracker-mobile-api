@@ -130,7 +130,7 @@ router.post("/send-email-verification/:id", async (req, res) => {
 
     // Send email verification email
     const mailOptions = {
-      from: "Task Tracker" process.env.NODE_MAILER_EMAIL,
+      from: `Task Tracker <process.env.NODE_MAILER_EMAIL>`,
       to: user.email,
       subject: "Verify Your Email Address for Task Tracker Application",
       template: "main",

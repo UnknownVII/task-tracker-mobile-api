@@ -29,11 +29,11 @@ config();
 
 // Check Unused IP's
 cron
-  .schedule("0 0 * * *", () => {
+  .schedule("* * * * *", () => {
     deleteOldDocuments();
   })
   .start();
-
+  
 // API Cache
 // const apicache = require('apicache');
 // let cache = apicache.middleware;

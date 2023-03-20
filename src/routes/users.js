@@ -1,16 +1,18 @@
-const router = require("express").Router();
-const moment = require("moment");
-const User = require("../../models/user_model");
+const bcrypt = require("bcryptjs");
+const config = require("dotenv").config();
+const express = require("express");
 const handlebars = require("nodemailer-express-handlebars");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
+const moment = require("moment");
+const nodemailer = require("nodemailer");
+const path = require('path');
+const User = require("../../models/user_model");
+const { getAccessToken } = require("../../utils/oauth-access-token");
+const { registerValidation, loginValidation } = require("../../utils/validate");
 const verify = require("../../utils/verify-token");
 
-const { registerValidation, loginValidation } = require("../../utils/validate");
-const { config } = require("dotenv");
-config();
-const nodemailer = require("nodemailer");
-const { getAccessToken } = require("../../utils/oauth-access-token");
+const router = express.Router();
+
 
 let accessToken;
 
@@ -136,7 +138,7 @@ router.post("/send-email-verification/:id", async (req, res) => {
       "compile",
       handlebars({
         viewEngine: { defaultLayout: false },
-        viewPath: "././emails/",
+        viewPath: path.join(process.cwd(), "emails"),
         extName: ".handlebars",
       })
     );

@@ -1,73 +1,52 @@
 const express = require("express");
-const app = express();
 const { config } = require("dotenv");
-var cors = require("cors");
-
 const { engine } = require("express-handlebars");
+const cors = require("cors");
+const cron = require("node-cron");
 
+const authRoute = require("./src/routes/auth");
+const tasksRoute = require("./src/routes/tasks");
+const usersRoute = require("./src/routes/users");
 const validateApiKey = require("./utils/validate-api-key");
 const validateHmac = require("./utils/validate-hmac");
 const { rateLimiter } = require("./utils/rate-limiter");
-
 const deleteOldDocuments = require("./utils/cron-jobs/ip-cleanup");
 
-//CONFIG IMAGE HANDLEBARS ASSESTS
+const app = express();
+const port = process.env.PORT || 8080;
+
+// Config image handlebars assets
 app.engine("handlebars", engine());
 app.set("view engine", "handlebars");
 app.set("views", "./emails");
-
 app.use("/images", express.static(__dirname + "/emails/images"));
-app.use(
-  "/favicon.ico",
-  express.static(__dirname + "/emails/images/favicon.ico")
-);
+app.use("/favicon.ico", express.static(__dirname + "/emails/images/favicon.ico"));
 
 config();
 
-//CHECK Unused IP's
-const cron = require("node-cron");
-cron
-  .schedule("0 0 * * *", () => {
-    deleteOldDocuments();
-  })
-  .start();
+// Check Unused IP's
+cron.schedule("0 0 * * *", () => {
+  deleteOldDocuments();
+}).start();
 
-//
-// cron
-//   .schedule("0 * * * * *", () => {
-//     deleteOldDocuments();
-//   })
-//   .start();
-
-//API CACHE
+// API Cache
 // const apicache = require('apicache');
 // let cache = apicache.middleware;
 // app.use(cache('5 minutes'));
 
-const port = process.env.PORT || 8080;
-
-//Import Routes
-const authRoute = require("./src/routes/auth");
-const tasksRoute = require("./src/routes/tasks");
-const usersRoute = require("./src/routes/users");
-
-app.listen(port, () => {
-  console.log("[Port    ] Server is running [", port, "]");
-});
-
-//Connect to DB
+// Connect to DB
 require("./utils/config/db.config")();
 
-//Middlewares
+app.listen(port, () => {
+  console.log(`[Port    ] Server is running [ ${port} ]`);
+});
+
+// Middlewares
 app.use(cors());
-
-//content-type - application/json
 app.use(express.json());
-
-//ontent-type - application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true }));
 
-//GLOBAL : API AND HMAC
+// GLOBAL: API and HMAC
 app.use("/", validateApiKey, validateHmac);
 app.use("/", rateLimiter);
 
@@ -76,12 +55,12 @@ app.get("/", (req, res) => {
   res.json({ message: "HELLO WORLDOOO" });
 });
 
-//Route Middleware
+// Route Middleware
 app.use("/api", authRoute);
 app.use("/task", tasksRoute);
 app.use("/user", usersRoute);
 
-//OAuth2.0
+// OAuth2.0
 const { google } = require("googleapis");
 const OAuth2Google = google.auth.OAuth2;
 

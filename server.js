@@ -2,7 +2,7 @@ const express = require("express");
 const { config } = require("dotenv");
 const { engine } = require("express-handlebars");
 const cors = require("cors");
-const cron = require("node-cron");
+const schedule = require("node-schedule");
 
 const authRoute = require("./src/routes/auth");
 const tasksRoute = require("./src/routes/tasks");
@@ -28,12 +28,12 @@ app.use(
 config();
 
 // Check Unused IP's
-cron
-  .schedule("* * * * *", () => {
-    deleteOldDocuments();
-  })
-  .start();
-  
+const schedule = require("node-schedule");
+
+const job = schedule.scheduleJob("*/1 * * * *", function () {
+  deleteOldDocuments();
+});
+
 // API Cache
 // const apicache = require('apicache');
 // let cache = apicache.middleware;

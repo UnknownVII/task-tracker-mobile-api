@@ -20,14 +20,19 @@ app.engine("handlebars", engine());
 app.set("view engine", "handlebars");
 app.set("views", "./emails");
 app.use("/images", express.static(__dirname + "/emails/images"));
-app.use("/favicon.ico", express.static(__dirname + "/emails/images/favicon.ico"));
+app.use(
+  "/favicon.ico",
+  express.static(__dirname + "/emails/images/favicon.ico")
+);
 
 config();
 
 // Check Unused IP's
-cron.schedule("0 0 * * *", () => {
-  deleteOldDocuments();
-}).start();
+cron
+  .schedule("0 0 * * *", () => {
+    deleteOldDocuments();
+  })
+  .start();
 
 // API Cache
 // const apicache = require('apicache');
@@ -46,16 +51,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// GLOBAL: API and HMAC
-app.use("/", validateApiKey, validateHmac);
-app.use("/", rateLimiter);
-
 // BASE route
 app.get("/", (req, res) => {
   res.json({ message: "HELLO WORLDOOO" });
 });
 
 // Route Middleware
+app.use("/api", rateLimiter);
+app.use("/task", validateApiKey, validateHmac, rateLimiter);
+app.use("/user", validateApiKey, validateHmac, rateLimiter);
+
 app.use("/api", authRoute);
 app.use("/task", tasksRoute);
 app.use("/user", usersRoute);

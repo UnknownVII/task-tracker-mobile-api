@@ -62,7 +62,7 @@ module.exports = async function deleteOldDocuments() {
   try {
     smtpTransport.sendMail(mailOptions, async (error, response) => {
       if (error) {
-        console.log(`${error}`);
+        console.log(`[MAILER  ] ${error}`);
       } else {
         console.log(`[MAILER  ] Emailed to ${response.accepted}`);
       }

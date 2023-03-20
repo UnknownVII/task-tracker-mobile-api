@@ -12,6 +12,7 @@ router.get(process.env.REDIRECT_URI, (req, res) => {
 
 router.get("/verify/:token", verifyEmail, async (req, res) => {
   const tokenValue = req.params.token.replace(/\*/g, ".");
+
   User.findOne(
     { "tokens.token": tokenValue, "tokens.type": "emailVerification" },
     (err, user) => {

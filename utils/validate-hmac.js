@@ -7,8 +7,7 @@ const secret = process.env.API_SECRET;
 module.exports = async function validateHMAC(req, res, next) {
   const isHttps = req.headers["x-forwarded-proto"] === "https";
   const hmacHeader = req.headers["x-hmac-signature"];
-  console.log(`API KEY: ${secret}`);
-  console.log(hmacHeader);
+
   if (!hmacHeader) {
     return res
       .status(401)
@@ -31,7 +30,7 @@ module.exports = async function validateHMAC(req, res, next) {
     .createHmac("sha256", secret)
     .update(data)
     .digest("hex");
-  console.log(data, "++", signature);
+
 
   if (hmacHeader !== signature) {
     return res

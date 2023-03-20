@@ -1,18 +1,18 @@
 const bcrypt = require("bcryptjs");
 const config = require("dotenv").config();
+const crypto = require("crypto");
 const express = require("express");
 const handlebars = require("nodemailer-express-handlebars");
 const jwt = require("jsonwebtoken");
 const moment = require("moment");
 const nodemailer = require("nodemailer");
-const path = require('path');
+const path = require("path");
 const User = require("../../models/user_model");
 const { getAccessToken } = require("../../utils/oauth-access-token");
 const { registerValidation, loginValidation } = require("../../utils/validate");
 const verify = require("../../utils/verify-token");
 
 const router = express.Router();
-
 
 let accessToken;
 
@@ -71,6 +71,13 @@ router.post("/register", async (req, res) => {
 });
 
 router.post("/send-email-verification/:id", async (req, res) => {
+  const isHttps = req.headers["x-forwarded-proto"] === "https";
+  const secret = process.env.API_SECRET;
+  const timestamps = Date.now();
+  const data = `${timestamps}/${isHttps ? "https" : req.protocol}://${req.get(
+    "host"
+  )}${req.originalUrl}`;
+  const hmac = crypto.createHmac("sha256", secret).update(data).digest("hex");
   try {
     const user = await User.findById(req.params.id);
 
@@ -132,6 +139,9 @@ router.post("/send-email-verification/:id", async (req, res) => {
       context: {
         name: user.name,
         hash: convertedHash,
+        hmac: hmac,
+        apiKey: process.env.API_KEY,
+        timestamp: timestamps,
       },
     };
     smtpTransport.use(
@@ -144,19 +154,19 @@ router.post("/send-email-verification/:id", async (req, res) => {
     );
     smtpTransport.sendMail(mailOptions, async (error, response) => {
       if (error) {
-        console.log(error);
+        console.log(`[MAILER  ] ${error}`);
         return res
           .status(400)
           .json({ error: "Failed to send verification email" });
       } else {
-        console.log("Verification email sent:", response.accepted);
+        console.log("[MAILER  ] Emailed to ", response.accepted);
         await user.save();
         res.status(200).json({ message: "Verification email sent" });
       }
       smtpTransport.close();
     });
   } catch (err) {
-    console.error(err);
+    console.error(`[MAILER  ] ${err}`);
     res.status(500).send("Internal server error");
   }
 });
@@ -225,7 +235,7 @@ router.get("/get/:id", verify, async (req, res) => {
     const taskCount = user.tasks.length;
 
     return res.status(200).json({
-      "user_data": {
+      user_data: {
         name,
         email,
         date,

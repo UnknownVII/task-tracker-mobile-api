@@ -16,7 +16,12 @@ const app = express();
 const port = process.env.PORT || 8080;
 
 // Config image handlebars assets
-app.engine("handlebars", engine());
+app.engine(
+  "handlebars",
+  engine({
+    layoutsDir: __dirname + "/emails/layouts",
+  })
+);
 app.set("view engine", "handlebars");
 app.set("views", "./emails");
 app.use("/images", express.static(__dirname + "/emails/images"));
@@ -28,7 +33,7 @@ app.use(
 config();
 
 // Check Unused IP's
-const job = schedule.scheduleJob("*/1 * * * *", function () {
+const job = schedule.scheduleJob("0 0 * * *", function () {
   deleteOldDocuments();
 });
 
@@ -70,7 +75,7 @@ const OAuth2Google = google.auth.OAuth2;
 const oauth2Client = new OAuth2Google(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
-  `http://localhost:8080/api${process.env.REDIRECT_URL}`
+  `https://task-tracker-mobile-api.vercel.app/api${process.env.REDIRECT_URL}`
 );
 
 oauth2Client.setCredentials({

@@ -10,37 +10,84 @@ router.get(process.env.REDIRECT_URI, (req, res) => {
   return res.status(200).json({ message: "CALLBACK" });
 });
 
-router.get("/verify/:token", verifyEmail, async (req, res) => {
+router.get("/verify/:token", async (req, res) => {
   const tokenValue = req.params.token.replace(/\*/g, ".");
 
   User.findOne(
     { "tokens.token": tokenValue, "tokens.type": "emailVerification" },
     (err, user) => {
       if (err) {
-        res.status(400).send("Error finding user");
+        res.render("main", {
+          pageTitle: "Error",
+          appTitle: "Task Tracker",
+          cardTitle: "Email Verification",
+          cardContent: "Error finding user",
+          buttonText: "Back",
+          backButtonLink: "/",
+        });
       } else if (!user) {
-        res.status(400).send("User not found");
+        res.render("main", {
+          pageTitle: "Error",
+          appTitle: "Task Tracker",
+          cardTitle: "Email Verification",
+          cardContent: "User not found",
+          buttonText: "Back",
+          backButtonLink: "/",
+        });
       } else {
         const tokenIndex = user.tokens.findIndex((t) => t.token === tokenValue);
         const tokenObj = user.tokens[tokenIndex];
 
         if (!tokenObj) {
-          //SHOWS TOKEN DOES NOT EXISTS
-          res.status(404).send("Token not found");
+          res.render("main", {
+            pageTitle: "Error",
+            appTitle: "Task Tracker",
+            cardTitle: "Email Verification",
+            cardContent: "Token not found",
+            buttonText: "Back",
+            backButtonLink: "/",
+          });
         } else if (tokenObj.used) {
-          //SHOWS EMAIL ALREADY VERIFIED
-          res.status(400).send("Email is already verified");
+          res.render("main", {
+            pageTitle: "Error",
+            appTitle: "Task Tracker",
+            cardTitle: "Email Verification",
+            cardContent: "Email is already verified",
+            buttonText: "Back",
+            backButtonLink: "/",
+          });
         } else if (tokenObj.expiresAt < new Date()) {
-          res.status(400).send("Token expired");
+          res.render("main", {
+            pageTitle: "Error",
+            appTitle: "Task Tracker",
+            cardTitle: "Email Verification",
+            cardContent: "Token expired",
+            buttonText: "Resend verification email",
+            backButtonLink: "/resend",
+          });
         } else {
           user.emailVerified = true;
           user.tokens[tokenIndex].used = true;
           user.tokens[tokenIndex].usedFor = "emailVerification";
           user.save((err) => {
             if (err) {
-              res.status(400).send("Error updating user");
+              res.render("main", {
+                pageTitle: "Error",
+                appTitle: "Task Tracker",
+                cardTitle: "Email Verification",
+                cardContent: "Error updating user",
+                buttonText: "Back",
+                backButtonLink: "/",
+              });
             } else {
-              res.send("Email verified");
+              res.render("success", {
+                pageTitle: "Success",
+                appTitle: "Task Tracker",
+                cardTitle: "Email Verification",
+                cardContent: "Your email has been successfully verified.",
+                buttonText: "Continue",
+                backButtonLink: "/",
+              });
             }
           });
         }

@@ -8,8 +8,13 @@ const moment = require("moment");
 const nodemailer = require("nodemailer");
 const path = require("path");
 const User = require("../../models/user_model");
-const { getAccessToken } = require("../../utils/token-authentication/oauth-access-token");
-const { registerValidation, loginValidation } = require("../../utils/joi-schema-validation/validate");
+const {
+  getAccessToken,
+} = require("../../utils/token-authentication/oauth-access-token");
+const {
+  registerValidation,
+  loginValidation,
+} = require("../../utils/joi-schema-validation/validate");
 const verify = require("../../utils/token-authentication/verify-token");
 
 const router = express.Router();

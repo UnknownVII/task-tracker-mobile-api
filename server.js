@@ -2,8 +2,10 @@ const express = require("express");
 const { config } = require("dotenv");
 const { engine } = require("express-handlebars");
 const cors = require("cors");
-const schedule = require("node-schedule");
+const logEndpoints = require("./utils/print-endpoints");
+const isRunningLocally = require("./utils/check-local-server");
 
+const schedule = require("node-schedule");
 const authRoute = require("./src/routes/auth");
 const tasksRoute = require("./src/routes/tasks");
 const usersRoute = require("./src/routes/users");
@@ -45,8 +47,16 @@ const job = schedule.scheduleJob("0 0 * * *", function () {
 // Connect to DB
 require("./utils/config/db.config")();
 
+async function isRunningAt() {
+  const isLocal = await isRunningLocally(port);
+  console.log(`[\x1b[35mSERVER\x1b[0m  ] ${isLocal? "Server is running locally: \x1b[32m\x1b[4mhttp://localhost:8080\x1b[0m": "Server is running at your cloud service"}`);
+}
+
+
 app.listen(port, () => {
-  console.log(`[Port    ] Server is running [ ${port} ]`);
+  console.log(`[\x1b[35mPORT\x1b[0m    ] Server is Listening to [ \x1b[33m${port}\x1b[0m ]`);
+  logEndpoints(app);
+  isRunningAt();
 });
 
 // Middlewares

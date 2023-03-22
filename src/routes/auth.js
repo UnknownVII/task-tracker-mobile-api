@@ -7,7 +7,8 @@ const verifyEmailwithHtml = require("../../utils/rendered/verify-token-email-wit
 config();
 
 router.get(process.env.REDIRECT_URI, (req, res) => {
-  return res.status(200).json({ message: "CALLBACK" });
+  return res.status(200).json({ message: `${req.query.code}` });
+  //CREATAE A METHOD TO GETTOKENS and STORE IT to the user's db
 });
 
 router.get("/verify/:token", verifyEmailwithHtml, async (req, res) => {

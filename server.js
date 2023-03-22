@@ -4,7 +4,9 @@ const { engine } = require("express-handlebars");
 const cors = require("cors");
 const logEndpoints = require("./utils/print-endpoints");
 const isRunningLocally = require("./utils/check-local-server");
-
+const {
+  getAccessToken,
+} = require("./utils/token-authentication/oauth-access-token");
 const schedule = require("node-schedule");
 const authRoute = require("./src/routes/auth");
 const tasksRoute = require("./src/routes/tasks");
@@ -49,14 +51,27 @@ require("./utils/config/db.config")();
 
 async function isRunningAt() {
   const isLocal = await isRunningLocally(port);
-  console.log(`[\x1b[35mSERVER\x1b[0m  ] ${isLocal? "Server is running locally: \x1b[32m\x1b[4mhttp://localhost:8080\x1b[0m": "Server is running at your cloud service"}`);
+  console.log(
+    `[\x1b[35mSERVER\x1b[0m  ] ${
+      isLocal
+        ? "Server is running locally: \x1b[32m\x1b[4mhttp://localhost:8080\x1b[0m"
+        : "Server is running at your cloud service"
+    }`
+  );
 }
 
-
-app.listen(port, () => {
-  console.log(`[\x1b[35mPORT\x1b[0m    ] Server is Listening to [ \x1b[33m${port}\x1b[0m ]`);
+app.listen(port, async () => {
+  console.log(
+    `[\x1b[35mPORT\x1b[0m    ] Server is Listening to [ \x1b[33m${port}\x1b[0m ]`
+  );
   logEndpoints(app);
   isRunningAt();
+  try {
+    await getAccessToken();
+    console.log(`[OAUTH2.0] Access token Retrieved`);
+  } catch (err) {
+    console.log(`[OAUTH2.0] ${err}`);
+  }
 });
 
 // Middlewares
@@ -69,7 +84,7 @@ app.get("/", (req, res) => {
   res.json({ message: "HELLO WORLDOOO" });
 });
 
-// Route Middleware
+// Route Middlewares
 app.use("/api", rateLimiter);
 app.use("/task", validateApiKey, validateHmac, rateLimiter);
 app.use("/user", validateApiKey, validateHmac, rateLimiter);
@@ -77,17 +92,3 @@ app.use("/user", validateApiKey, validateHmac, rateLimiter);
 app.use("/api", authRoute);
 app.use("/task", tasksRoute);
 app.use("/user", usersRoute);
-
-// OAuth2.0
-const { google } = require("googleapis");
-const OAuth2Google = google.auth.OAuth2;
-
-const oauth2Client = new OAuth2Google(
-  process.env.CLIENT_ID,
-  process.env.CLIENT_SECRET,
-  `https://task-tracker-mobile-api.vercel.app/api${process.env.REDIRECT_URL}`
-);
-
-oauth2Client.setCredentials({
-  refresh_token: process.env.REFRESH_TOKEN,
-});

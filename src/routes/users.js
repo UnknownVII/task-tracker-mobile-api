@@ -1,5 +1,4 @@
 const bcrypt = require("bcryptjs");
-const config = require("dotenv").config();
 const crypto = require("crypto");
 const express = require("express");
 const handlebars = require("nodemailer-express-handlebars");
@@ -8,6 +7,7 @@ const moment = require("moment");
 const nodemailer = require("nodemailer");
 const path = require("path");
 const User = require("../../models/user_model");
+
 const {
   getAccessToken,
 } = require("../../utils/token-authentication/oauth-access-token");
@@ -16,11 +16,9 @@ const {
   loginValidation,
 } = require("../../utils/joi-schema-validation/validate");
 const verify = require("../../utils/token-authentication/verify-token");
-
 const router = express.Router();
 
 let accessToken;
-
 const smtpTransport = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -33,9 +31,9 @@ const smtpTransport = nodemailer.createTransport({
   },
 });
 
+
 //REGISTER
 router.post("/register", async (req, res) => {
-  accessToken = getAccessToken();
   //VALIDATION OF DATA
   const { error } = registerValidation(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
@@ -76,13 +74,15 @@ router.post("/register", async (req, res) => {
 });
 
 router.post("/send-email-verification/:id", async (req, res) => {
-  const isHttps = req.headers["x-forwarded-proto"] === "https";
-  const secret = process.env.API_SECRET;
-  const timestamps = Date.now();
-  const data = `${timestamps}/${isHttps ? "https" : req.protocol}://${req.get(
-    "host"
-  )}${req.originalUrl}`;
-  const hmac = crypto.createHmac("sha256", secret).update(data).digest("hex");
+  try {
+    accessToken = await getAccessToken();
+    console.log(`[OAUTH2.0] Access token Retrieved`);
+  } catch (err) {
+    console.log(`[OAUTH2.0] ${err}`);
+    return res
+      .status(400)
+      .json({ error: `Cannot retrieve Access token: ${err}` });
+  }
   try {
     const user = await User.findById(req.params.id);
 
@@ -144,9 +144,6 @@ router.post("/send-email-verification/:id", async (req, res) => {
       context: {
         name: user.name,
         hash: convertedHash,
-        hmac: hmac,
-        apiKey: process.env.API_KEY,
-        timestamp: timestamps,
       },
     };
     smtpTransport.use(
@@ -176,7 +173,7 @@ router.post("/send-email-verification/:id", async (req, res) => {
   }
 });
 
-//LOGIN USER WITH UNIQUE TOKEN
+//LOGIN USER WITH API KEY and HMAC
 router.post("/login", async (req, res) => {
   //VALIDATION OF DATA
   const { error } = loginValidation(req.body);

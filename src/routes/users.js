@@ -8,6 +8,9 @@ const nodemailer = require("nodemailer");
 const path = require("path");
 const User = require("../../models/user_model");
 
+const isRunningLocally = require("../../utils/check-local-server");
+const isLocal = isRunningLocally();
+
 const {
   getAccessToken,
 } = require("../../utils/token-authentication/oauth-access-token");
@@ -30,7 +33,6 @@ const smtpTransport = nodemailer.createTransport({
     accessToken: accessToken,
   },
 });
-
 
 //REGISTER
 router.post("/register", async (req, res) => {
@@ -127,7 +129,11 @@ router.post("/send-email-verification/:id", async (req, res) => {
     }
 
     user.verificationEmailSentDate = new Date(); // update verificationEmailSentDate
-
+    const verificationURL = `${
+      isLocal
+        ? "http://localhost:8080"
+        : "https://task-tracker-mobile-api.vercel.app"
+    }/api/verify/${convertedHash}`;
     // Send email verification email
     const mailOptions = {
       from: `Task Tracker <process.env.NODE_MAILER_EMAIL>`,
@@ -143,7 +149,7 @@ router.post("/send-email-verification/:id", async (req, res) => {
       ],
       context: {
         name: user.name,
-        hash: convertedHash,
+        url: verificationURL,
       },
     };
     smtpTransport.use(

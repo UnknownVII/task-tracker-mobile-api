@@ -1,7 +1,9 @@
 const os = require("os");
 const net = require("net");
+const { config } = require("dotenv");
+config();
 
-module.exports = function isRunningLocally(port) {
+module.exports = function isRunningLocally() {
   // Get the IP address of the host
   const host = os.hostname();
   // Create a new TCP socket
@@ -9,7 +11,7 @@ module.exports = function isRunningLocally(port) {
 
   return new Promise((resolve, reject) => {
     // Try to connect to the host on the specified port
-    socket.connect(port, host, () => {
+    socket.connect(process.env.PORT, host, () => {
       // If the connection is successful, we're running locally
       socket.end();
       resolve(true);

@@ -4,8 +4,7 @@ const Token = require("../../models/token");
 const { google } = require("googleapis");
 
 config();
-
-const isLocal = isRunningLocally(process.env.PORT);
+const isLocal = isRunningLocally();
 let isExpired = false;
 
 // Create a new OAuth2 client

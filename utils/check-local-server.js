@@ -3,6 +3,9 @@ const net = require("net");
 const { config } = require("dotenv");
 config();
 
+// Define a global variable to keep track of whether the code is running locally
+global.isLocal = false;
+
 module.exports = function isRunningLocally() {
   // Get the IP address of the host
   const host = os.hostname();
@@ -14,19 +17,15 @@ module.exports = function isRunningLocally() {
     socket.connect(process.env.PORT, host, () => {
       // If the connection is successful, we're running locally
       socket.end();
+      global.isLocal = true;
       resolve(true);
     });
 
     // If the connection fails, we're not running locally
-    socket.on("error", (err) => {
-      // If the error is a connection refused error, we're not running locally
-      if (err.code === "ECONNREFUSED") {
-        resolve(false);
-      } else {
-        // Otherwise, reject the promise with the error
-        console.reject(err);
-      }
+    socket.on("error", () => {
       socket.destroy();
+      global.isLocal = false;
+      resolve(false);
     });
   });
 };

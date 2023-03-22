@@ -50,7 +50,7 @@ const job = schedule.scheduleJob("0 0 * * *", function () {
 require("./utils/config/db.config")();
 
 async function isRunningAt() {
-  global.isLocal = await isRunningLocally();
+  await isRunningLocally();
   console.log(
     `[\x1b[35mSERVER\x1b[0m  ] ${
       global.isLocal 

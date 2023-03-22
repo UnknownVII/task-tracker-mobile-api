@@ -18,9 +18,14 @@ module.exports = function isRunningLocally() {
     });
 
     // If the connection fails, we're not running locally
-    socket.on("error", () => {
-      socket.destroy();
-      resolve(false);
+    socket.on("error", (err) => {
+      // If the error is a connection refused error, we're not running locally
+      if (err.code === "ECONNREFUSED") {
+        resolve(false);
+      } else {
+        // Otherwise, reject the promise with the error
+        console.reject(err);
+      }
     });
   });
 };

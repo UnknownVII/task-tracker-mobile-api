@@ -50,10 +50,10 @@ const job = schedule.scheduleJob("0 0 * * *", function () {
 require("./utils/config/db.config")();
 
 async function isRunningAt() {
-  const isLocal = await isRunningLocally();
+  global.isLocal = await isRunningLocally();
   console.log(
     `[\x1b[35mSERVER\x1b[0m  ] ${
-      isLocal
+      global.isLocal 
         ? "Server is running locally: \x1b[32m\x1b[4mhttp://localhost:8080\x1b[0m"
         : "Server is running at your cloud service"
     }`

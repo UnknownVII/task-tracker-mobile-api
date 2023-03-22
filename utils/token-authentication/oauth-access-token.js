@@ -1,10 +1,7 @@
 const { config } = require("dotenv");
-const isRunningLocally = require("../check-local-server");
 const Token = require("../../models/token");
 const { google } = require("googleapis");
-
 config();
-const isLocal = isRunningLocally();
 let isExpired = false;
 
 // Create a new OAuth2 client
@@ -13,7 +10,7 @@ const oauth2Client = new OAuth2Google(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
   `${
-    isLocal
+    global.isLocal 
       ? "http://localhost:8080"
       : "https://task-tracker-mobile-api.vercel.app"
   }/api${process.env.REDIRECT_URI}`

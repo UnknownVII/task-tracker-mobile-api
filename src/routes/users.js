@@ -8,7 +8,6 @@ const nodemailer = require("nodemailer");
 const path = require("path");
 const User = require("../../models/user_model");
 
-const isRunningLocally = require("../../utils/check-local-server");
 
 
 const {
@@ -129,9 +128,9 @@ router.post("/send-email-verification/:id", async (req, res) => {
     }
 
     user.verificationEmailSentDate = new Date(); // update verificationEmailSentDate
-    const isLocal = isRunningLocally();
+
     const verificationURL = `${
-      isLocal
+      global.isLocal 
         ? "http://localhost:8080"
         : "https://task-tracker-mobile-api.vercel.app"
     }/api/verify/${convertedHash}`;

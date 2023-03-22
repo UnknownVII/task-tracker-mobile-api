@@ -11,7 +11,7 @@ module.exports = function isRunningLocally() {
 
   return new Promise((resolve, reject) => {
     // Try to connect to the host on the specified port
-    socket.connect(process.env.PORT, host, () => {
+    socket.connect(123, host, () => {
       // If the connection is successful, we're running locally
       socket.end();
       resolve(true);
@@ -26,6 +26,7 @@ module.exports = function isRunningLocally() {
         // Otherwise, reject the promise with the error
         console.reject(err);
       }
+      socket.destroy();
     });
   });
 };

@@ -54,8 +54,8 @@ async function isRunningAt() {
   console.log(
     `[\x1b[35mSERVER\x1b[0m  ] ${
       global.isLocal 
-        ? "Server is running locally: \x1b[32m\x1b[4mhttp://localhost:8080\x1b[0m"
-        : "Server is running at your cloud service"
+        ? `Server is running locally: \x1b[32m\x1b[4m${process.env.LOCAL_URL}\x1b[0m`
+        : `Server is running at your cloud service: \x1b[32m\x1b[4m${process.env.CLOUD_URL}\x1b[0m`
     }`
   );
 }

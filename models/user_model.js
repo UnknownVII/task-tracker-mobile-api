@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const moment = require("moment");
+const { number } = require("@hapi/joi");
 
 const taskSchema = new mongoose.Schema({
   title: { type: String, required: true, min: 3, max: 20 },
@@ -21,7 +22,12 @@ const taskSchema = new mongoose.Schema({
 const tokenSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ["emailVerification", "passwordReset", "userAccessToken"],
+    enum: [
+      "emailVerification",
+      "passwordReset",
+      "userAccessToken",
+      "smsVerification",
+    ],
     required: true,
   },
   token: {
@@ -36,6 +42,8 @@ const tokenSchema = new mongoose.Schema({
         return moment().add(7, "days").toDate();
       } else if (this.type === "emailVerification") {
         return moment().add(1, "hour").toDate();
+      } else if (this.type === "smsVerification") {
+        return moment().add(5, "minutes").toDate();
       } else {
         return moment().add(5, "minutes").toDate();
       }
@@ -59,14 +67,16 @@ const userSchema = new mongoose.Schema({
     min: 6,
     max: 255,
   },
-
   email: {
     type: String,
     required: true,
     min: 6,
     max: 255,
   },
-
+  phoneNumber: {
+    type: Number,
+    required: true,
+  },
   password: {
     type: String,
     required: true,
@@ -76,6 +86,10 @@ const userSchema = new mongoose.Schema({
   tasks: [taskSchema],
   tokens: [tokenSchema],
   emailVerified: {
+    type: Boolean,
+    default: false,
+  },
+  smsVerified: {
     type: Boolean,
     default: false,
   },

@@ -7,9 +7,8 @@ const moment = require("moment");
 const nodemailer = require("nodemailer");
 const path = require("path");
 const User = require("../../models/user_model");
-
-
-
+const axios = require("axios");
+const generateVerificationCode = require("../../utils/generate-6-digit");
 const {
   getAccessToken,
 } = require("../../utils/token-authentication/oauth-access-token");
@@ -62,6 +61,7 @@ router.post("/register", async (req, res) => {
   const user = new User({
     name: req.body.name,
     email: req.body.email,
+    phoneNumber: req.body.phoneNumber,
     password: hashPassword,
     verificationEmailSentDate: null,
   });
@@ -84,11 +84,16 @@ router.post("/send-email-verification/:id", async (req, res) => {
       .status(400)
       .json({ error: `Cannot retrieve Access token: ${err}` });
   }
+
   try {
     const user = await User.findById(req.params.id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ message: "Email already verified" });
     }
 
     const emailVerificationToken = user.tokens.find(
@@ -130,15 +135,14 @@ router.post("/send-email-verification/:id", async (req, res) => {
     user.verificationEmailSentDate = new Date(); // update verificationEmailSentDate
 
     const verificationURL = `${
-      global.isLocal 
-        ? "http://localhost:8080"
-        : "https://task-tracker-mobile-api.vercel.app"
+      global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
     }/api/verify/${convertedHash}`;
+
     // Send email verification email
     const mailOptions = {
-      from: `Task Tracker <process.env.NODE_MAILER_EMAIL>`,
+      from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
       to: user.email,
-      subject: "Verify Your Email Address for Task Tracker Application",
+      subject: "Verify your email",
       template: "main",
       attachments: [
         {
@@ -178,6 +182,7 @@ router.post("/send-email-verification/:id", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 //LOGIN USER WITH API KEY and HMAC
 router.post("/login", async (req, res) => {

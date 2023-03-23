@@ -11,8 +11,8 @@ const oauth2Client = new OAuth2Google(
   process.env.CLIENT_SECRET,
   `${
     global.isLocal 
-      ? "http://localhost:8080"
-      : "https://task-tracker-mobile-api.vercel.app"
+      ? process.env.LOCAL_URL
+      : process.env.CLOUD_URL
   }/api${process.env.REDIRECT_URI}`
 );
 

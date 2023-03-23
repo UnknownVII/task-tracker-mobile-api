@@ -92,8 +92,14 @@ router.post("/send-email-verification/:id", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.emailVerified) {
-      return res.status(400).json({ message: "Email already verified" });
+    const emailVerificationVerified = user.verifications.find(
+      (verification) => verification.type === "emailVerification"
+    );
+
+    if (emailVerificationVerified) {
+      if (emailVerificationVerified.verified) {
+        return res.status(400).json({ message: "Email already verified" });
+      }
     }
 
     const emailVerificationToken = user.tokens.find(
@@ -118,6 +124,20 @@ router.post("/send-email-verification/:id", async (req, res) => {
     const tokenIndex = user.tokens.findIndex(
       (t) => t.type === "emailVerification"
     );
+    const verifiedIndex = user.verifications.findIndex(
+      (t) => t.type === "emailVerification"
+    );
+
+    if (verifiedIndex !== -1) {
+      // verified already exists, update it
+      user.verifications[verifiedIndex].verificationSentDate = new Date();
+    } else {
+      // verified does not exist, add it
+      user.verifications.push({
+        type: "emailVerification",
+        verificationSentDate: new Date(),
+      });
+    }
 
     if (tokenIndex !== -1) {
       // Token already exists, update it
@@ -131,8 +151,6 @@ router.post("/send-email-verification/:id", async (req, res) => {
         expiresAt: expiresAt,
       });
     }
-
-    user.verificationEmailSentDate = new Date(); // update verificationEmailSentDate
 
     const verificationURL = `${
       global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
@@ -183,6 +201,59 @@ router.post("/send-email-verification/:id", async (req, res) => {
   }
 });
 
+router.post("/send-sms-verification/:id", async (req, res) => {
+  const verificationCode = generateVerificationCode();
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    try {
+      const userNum = await User.findOne({ phone_number: user.phoneNumber });
+
+      if (!userNum) {
+        return res.status(404).send("User's phone number not found");
+      }
+
+      user.tokens.push({
+        type: "smsVerification",
+        token: verificationCode,
+        expiresAt: moment().add(5, "minutes").toDate(),
+      });
+
+      const options = {
+        method: "POST",
+        url: process.env.RAPID_API_URL,
+        params: {
+          phoneNumber: user.phoneNumber,
+          verifyCode: verificationCode,
+          appName: "Task Tracker",
+        },
+        headers: {
+          "X-RapidAPI-Key": process.env.RAPID_API_KEY,
+          "X-RapidAPI-Host": process.env.RAPID_API_HOST,
+        },
+      };
+      axios
+        .request(options)
+        .then(async function (response) {
+          console.log(response.data);
+          await user.save();
+          res.status(200).send("Verification code sent successfully");
+        })
+        .catch(function (error) {
+          console.error(error);
+        });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error sending verification code");
+    }
+  } catch (err) {
+    console.error(`[SMS     ] ${err}`);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 //LOGIN USER WITH API KEY and HMAC
 router.post("/login", async (req, res) => {

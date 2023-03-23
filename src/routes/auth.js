@@ -35,6 +35,10 @@ router.get("/verify/:token", verifyEmailwithHtml, async (req, res) => {
         });
       } else {
         const tokenIndex = user.tokens.findIndex((t) => t.token === tokenValue);
+        const verificationIndex = user.verifications.findIndex(
+          (t) => t.type === "emailVerification"
+        );
+
         const tokenObj = user.tokens[tokenIndex];
 
         if (!tokenObj) {
@@ -62,9 +66,12 @@ router.get("/verify/:token", verifyEmailwithHtml, async (req, res) => {
             contentState: "error",
           });
         } else {
-          user.emailVerified = true;
+          
+          user.verifications[verificationIndex].verified = true;
+          user.verifications[verificationIndex].verifiedDate = new Date();
           user.tokens[tokenIndex].used = true;
-          user.tokens[tokenIndex].usedFor = "emailVerification";
+          user.tokens[tokenIndex].usedDate = new Date();
+
           user.save((err) => {
             if (err) {
               res.render("main", {

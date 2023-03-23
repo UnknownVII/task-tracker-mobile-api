@@ -53,6 +53,32 @@ const tokenSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  usedDate: {
+    type: Date,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    required: true,
+  },
+});
+
+const verificationSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ["emailVerification", "smsVerification"],
+    required: true,
+  },
+  verificationSentDate: {
+    type: Date,
+  },
+  verified: {
+    type: Boolean,
+    default: false,
+  },
+  verifiedDate: {
+    type: Date,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -85,17 +111,7 @@ const userSchema = new mongoose.Schema({
   },
   tasks: [taskSchema],
   tokens: [tokenSchema],
-  emailVerified: {
-    type: Boolean,
-    default: false,
-  },
-  smsVerified: {
-    type: Boolean,
-    default: false,
-  },
-  verificationEmailSentDate: {
-    type: Date,
-  },
+  verifications: [verificationSchema],
   isLocked: {
     type: Boolean,
     default: false,

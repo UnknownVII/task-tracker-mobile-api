@@ -86,6 +86,21 @@ const verificationSchema = new mongoose.Schema({
   },
 });
 
+const locationSchema = new mongoose.Schema({
+  ip: { type: String, required: true },
+  countryCode: { type: String, required: true },
+  countryName: { type: String, required: true },
+  cityName: { type: String, required: true },
+  latitude: { type: Number },
+  longitude: { type: Number },
+  zipCode: { type: String, required: true },
+  isProxy: { type: Boolean, required: true },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -112,9 +127,17 @@ const userSchema = new mongoose.Schema({
   tasks: [taskSchema],
   tokens: [tokenSchema],
   verifications: [verificationSchema],
+  lastLoginIPGeoLocation: [locationSchema],
   isLocked: {
     type: Boolean,
     default: false,
+  },
+  loginAttempts: {
+    type: Number,
+    default: 0,
+  },
+  lastLogin: {
+    type: Date,
   },
   date: {
     type: Date,

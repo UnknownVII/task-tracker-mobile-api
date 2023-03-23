@@ -18,7 +18,7 @@ const {
 } = require("../../utils/joi-schema-validation/validate");
 const verify = require("../../utils/token-authentication/verify-token");
 const router = express.Router();
-
+const MAX_LOGIN_ATTEMPTS = 5;
 let accessToken;
 const smtpTransport = nodemailer.createTransport({
   service: "gmail",
@@ -31,6 +31,7 @@ const smtpTransport = nodemailer.createTransport({
     accessToken: accessToken,
   },
 });
+const ipaddr = require("ipaddr.js");
 
 //REGISTER
 router.post("/register", async (req, res) => {
@@ -63,7 +64,6 @@ router.post("/register", async (req, res) => {
     email: req.body.email,
     phoneNumber: req.body.phoneNumber,
     password: hashPassword,
-    verificationEmailSentDate: null,
   });
 
   try {
@@ -265,10 +265,58 @@ router.post("/login", async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
   if (!user) return res.status(400).json({ error: "Email does not exist!" });
 
+  if (user.isLocked) {
+    return res.status(400).json({
+      message: "Account has some issues please check your email",
+    });
+  }
+  const ipv6 = req.ip.toString();
+  const ipv4 = ipaddr.process(ipv6).toString();
+  console.log(ipv4);
+
+  axios
+    .get(
+      `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
+    )
+    .then(async (response) => {
+      user.lastLoginIPGeoLocation.push({
+        cityName: response.data.city_name,
+        countryCode: response.data.country_code,
+        countryName: response.data.country_name,
+        ip: response.data.ip,
+        isProxy: response.data.is_proxy,
+        latitude: response.data.latitude,
+        longitude: response.data.longitude,
+        zipCode: response.data.zip_code,
+      });
+      await user.save();
+    })
+    .catch((error) => {
+      // Handle error here
+      console.error(error);
+    });
+
   //CHECK IF PASSWORD IS CORRECT
   const validPass = await bcrypt.compare(req.body.password, user.password);
-  if (!validPass)
-    return res.status(400).json({ error: "Email/Password is wrong!" });
+  if (!validPass) {
+    user.loginAttempts += 1;
+    if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+      user.isLocked = true;
+    }
+    await user.save();
+    if (user.loginAttempts == MAX_LOGIN_ATTEMPTS) {
+      return res.status(400).json({
+        error:
+          "Account locked due to many failed login attempts. Check email to resolve issue",
+      });
+    } else {
+      return res.status(400).json({ error: "Email/Password is wrong!" });
+    }
+  } else {
+    user.loginAttempts = 0;
+    user.lastLogin = Date.now();
+    await user.save();
+  }
 
   //CREATE AND ASSIGN TOKENS
   const accessToken = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET, {

@@ -298,7 +298,7 @@ router.post("/login", async (req, res) => {
     if (user.loginAttempts == MAX_LOGIN_ATTEMPTS) {
       
       try {
-        accessToken = await getAccessToken();
+        await getAccessToken();
         console.log(`[OAUTH2.0] Access token Retrieved`);
       } catch (err) {
         console.log(`[OAUTH2.0] ${err}`);

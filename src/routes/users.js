@@ -9,6 +9,8 @@ const path = require("path");
 const User = require("../../models/user_model");
 const axios = require("axios");
 const generateVerificationCode = require("../../utils/generate-6-digit");
+const generateId = require("../../utils/generate-email-id");
+
 const {
   getAccessToken,
 } = require("../../utils/token-authentication/oauth-access-token");
@@ -172,6 +174,7 @@ router.post("/send-email-verification/:id", async (req, res) => {
       context: {
         name: user.name,
         url: verificationURL,
+        emailId: generateId(24),
       },
     };
     smtpTransport.use(
@@ -270,31 +273,19 @@ router.post("/login", async (req, res) => {
       message: "Account has some issues please check your email",
     });
   }
-  const ipv6 = req.ip.toString();
-  const ipv4 = ipaddr.process(ipv6).toString();
-  console.log(ipv4);
 
-  axios
-    .get(
-      `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
-    )
-    .then(async (response) => {
-      user.lastLoginIPGeoLocation.push({
-        cityName: response.data.city_name,
-        countryCode: response.data.country_code,
-        countryName: response.data.country_name,
-        ip: response.data.ip,
-        isProxy: response.data.is_proxy,
-        latitude: response.data.latitude,
-        longitude: response.data.longitude,
-        zipCode: response.data.zip_code,
-      });
-      await user.save();
-    })
-    .catch((error) => {
-      // Handle error here
-      console.error(error);
-    });
+  const ipv6 = req.ip.toString();
+  let ipv4;
+
+  if (ipv6 === "::1") {
+    ipv4 = "0000:0000:0000:0000:0000:0000:0000:0001";
+  } else {
+    ipv4 = ipaddr.process(ipv6).toString();
+  }
+
+  const index = user.lastLoginIPGeoLocations.findIndex(
+    (obj) => obj.ip === ipv4
+  );
 
   //CHECK IF PASSWORD IS CORRECT
   const validPass = await bcrypt.compare(req.body.password, user.password);
@@ -305,6 +296,62 @@ router.post("/login", async (req, res) => {
     }
     await user.save();
     if (user.loginAttempts == MAX_LOGIN_ATTEMPTS) {
+      axios
+        .get(
+          `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
+        )
+        .then(async (response) => {
+          try {
+            accessToken = await getAccessToken();
+            console.log(`[OAUTH2.0] Access token Retrieved`);
+          } catch (err) {
+            console.log(`[OAUTH2.0] ${err}`);
+            return res
+              .status(400)
+              .json({ error: `Cannot retrieve Access token: ${err}` });
+          }
+          const mailOptions = {
+            from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
+            to: user.email,
+            subject: "Account Lockout Notification",
+            template: "account",
+            attachments: [
+              {
+                filename: "app-ico-image.png",
+                path: "./emails/images/app-ico-image.png",
+                cid: "imageURL",
+              },
+            ],
+            context: {
+              name: user.name,
+              countryName: response.data.country_name,
+              cityName: response.data.city_name,
+              ip: response.data.ip,
+              isProxy: response.data.is_proxy,
+              zipCode: response.data.zip_code,
+              emailId: generateId(24),
+            },
+          };
+          smtpTransport.use(
+            "compile",
+            handlebars({
+              viewEngine: { defaultLayout: false },
+              viewPath: path.join(process.cwd(), "emails"),
+              extName: ".handlebars",
+            })
+          );
+          smtpTransport.sendMail(mailOptions, async (error, response) => {
+            if (error) {
+              console.log(`[MAILER  ] ${error}`);
+            } else {
+              console.log("[MAILER  ] Emailed to ", response.accepted);
+            }
+            smtpTransport.close();
+          });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
       return res.status(400).json({
         error:
           "Account locked due to many failed login attempts. Check email to resolve issue",
@@ -315,6 +362,29 @@ router.post("/login", async (req, res) => {
   } else {
     user.loginAttempts = 0;
     user.lastLogin = Date.now();
+    axios
+      .get(
+        `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
+      )
+      .then(async (response) => {
+        if (index !== -1) {
+          user.lastLoginIPGeoLocations[index].date = new Date();
+        } else {
+          user.lastLoginIPGeoLocations.push({
+            cityName: response.data.city_name,
+            countryCode: response.data.country_code,
+            countryName: response.data.country_name,
+            ip: response.data.ip,
+            isProxy: response.data.is_proxy,
+            latitude: response.data.latitude,
+            longitude: response.data.longitude,
+            zipCode: response.data.zip_code,
+          });
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
     await user.save();
   }
 

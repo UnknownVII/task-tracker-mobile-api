@@ -127,7 +127,7 @@ const userSchema = new mongoose.Schema({
   tasks: [taskSchema],
   tokens: [tokenSchema],
   verifications: [verificationSchema],
-  lastLoginIPGeoLocation: [locationSchema],
+  lastLoginIPGeoLocations: [locationSchema],
   isLocked: {
     type: Boolean,
     default: false,

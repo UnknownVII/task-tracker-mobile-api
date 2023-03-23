@@ -296,20 +296,22 @@ router.post("/login", async (req, res) => {
     }
     await user.save();
     if (user.loginAttempts == MAX_LOGIN_ATTEMPTS) {
+      
+      try {
+        accessToken = await getAccessToken();
+        console.log(`[OAUTH2.0] Access token Retrieved`);
+      } catch (err) {
+        console.log(`[OAUTH2.0] ${err}`);
+        return res
+          .status(400)
+          .json({ error: `Cannot retrieve Access token: ${err}` });
+      }
+
       axios
         .get(
           `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
         )
         .then(async (response) => {
-          try {
-            accessToken = await getAccessToken();
-            console.log(`[OAUTH2.0] Access token Retrieved`);
-          } catch (err) {
-            console.log(`[OAUTH2.0] ${err}`);
-            return res
-              .status(400)
-              .json({ error: `Cannot retrieve Access token: ${err}` });
-          }
           const mailOptions = {
             from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
             to: user.email,

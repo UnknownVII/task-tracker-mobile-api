@@ -10,7 +10,7 @@ const User = require("../../models/user_model");
 const axios = require("axios");
 const generateVerificationCode = require("../../utils/generate-6-digit");
 const generateId = require("../../utils/generate-email-id");
-
+const sendMail = require("../../utils/compose-email");
 const {
   getAccessToken,
 } = require("../../utils/token-authentication/oauth-access-token");
@@ -22,6 +22,7 @@ const verify = require("../../utils/token-authentication/verify-token");
 const router = express.Router();
 const MAX_LOGIN_ATTEMPTS = 5;
 let accessToken;
+
 const smtpTransport = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -33,6 +34,7 @@ const smtpTransport = nodemailer.createTransport({
     accessToken: accessToken,
   },
 });
+
 const ipaddr = require("ipaddr.js");
 
 //REGISTER
@@ -78,16 +80,6 @@ router.post("/register", async (req, res) => {
 
 router.post("/send-email-verification/:id", async (req, res) => {
   try {
-    accessToken = await getAccessToken();
-    console.log(`[OAUTH2.0] Access token Retrieved`);
-  } catch (err) {
-    console.log(`[OAUTH2.0] ${err}`);
-    return res
-      .status(400)
-      .json({ error: `Cannot retrieve Access token: ${err}` });
-  }
-
-  try {
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -120,6 +112,7 @@ router.post("/send-email-verification/:id", async (req, res) => {
     const emailToken = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET, {
       expiresIn: "5m",
     });
+    
     const convertedHash = emailToken.toString().replace(/\./g, "*");
 
     const expiresAt = Date.now() + 300000; // Expires in 5 minutes
@@ -177,27 +170,14 @@ router.post("/send-email-verification/:id", async (req, res) => {
         emailId: generateId(24),
       },
     };
-    smtpTransport.use(
-      "compile",
-      handlebars({
-        viewEngine: { defaultLayout: false },
-        viewPath: path.join(process.cwd(), "emails"),
-        extName: ".handlebars",
-      })
-    );
-    smtpTransport.sendMail(mailOptions, async (error, response) => {
-      if (error) {
-        console.log(`[MAILER  ] ${error}`);
-        return res
-          .status(400)
-          .json({ error: "Failed to send verification email" });
-      } else {
-        console.log("[MAILER  ] Emailed to ", response.accepted);
-        await user.save();
-        res.status(200).json({ message: "Verification email sent" });
-      }
-      smtpTransport.close();
-    });
+    const emailSent = await sendMail(mailOptions);
+    if (!emailSent) {
+      return res
+        .status(400)
+        .json({ error: "Failed to send verification email" });
+    }
+    await user.save();
+    res.status(200).json({ message: "Verification email sent" });
   } catch (err) {
     console.error(`[MAILER  ] ${err}`);
     res.status(500).json({ error: "Internal server error" });
@@ -287,6 +267,16 @@ router.post("/login", async (req, res) => {
     (obj) => obj.ip === ipv4
   );
 
+  try {
+    await getAccessToken();
+    console.log(`[OAUTH2.0] Access token Retrieved`);
+  } catch (err) {
+    console.log(`[OAUTH2.0] ${err}`);
+    return res
+      .status(400)
+      .json({ error: `Cannot retrieve Access token: ${err}` });
+  }
+
   //CHECK IF PASSWORD IS CORRECT
   const validPass = await bcrypt.compare(req.body.password, user.password);
   if (!validPass) {
@@ -296,17 +286,6 @@ router.post("/login", async (req, res) => {
     }
     await user.save();
     if (user.loginAttempts == MAX_LOGIN_ATTEMPTS) {
-      
-      try {
-        await getAccessToken();
-        console.log(`[OAUTH2.0] Access token Retrieved`);
-      } catch (err) {
-        console.log(`[OAUTH2.0] ${err}`);
-        return res
-          .status(400)
-          .json({ error: `Cannot retrieve Access token: ${err}` });
-      }
-
       axios
         .get(
           `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
@@ -334,22 +313,16 @@ router.post("/login", async (req, res) => {
               emailId: generateId(24),
             },
           };
-          smtpTransport.use(
-            "compile",
-            handlebars({
-              viewEngine: { defaultLayout: false },
-              viewPath: path.join(process.cwd(), "emails"),
-              extName: ".handlebars",
-            })
-          );
-          smtpTransport.sendMail(mailOptions, async (error, response) => {
-            if (error) {
-              console.log(`[MAILER  ] ${error}`);
-            } else {
-              console.log("[MAILER  ] Emailed to ", response.accepted);
-            }
-            smtpTransport.close();
-          });
+          const emailSent = await sendMail(mailOptions);
+          if (!emailSent) {
+            return res
+              .status(400)
+              .json({ error: "Failed to send account notification email" });
+          } else {
+            return res
+              .status(200)
+              .json({ message: "Account notification email sent" });
+          }
         })
         .catch((error) => {
           console.error(error);

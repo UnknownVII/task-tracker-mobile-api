@@ -112,7 +112,7 @@ router.post("/send-email-verification/:id", async (req, res) => {
     const emailToken = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET, {
       expiresIn: "5m",
     });
-    
+
     const convertedHash = emailToken.toString().replace(/\./g, "*");
 
     const expiresAt = Date.now() + 300000; // Expires in 5 minutes
@@ -315,13 +315,9 @@ router.post("/login", async (req, res) => {
           };
           const emailSent = await sendMail(mailOptions);
           if (!emailSent) {
-            return res
-              .status(400)
-              .json({ error: "Failed to send account notification email" });
+            console.log("[L MAILER] Failed to send account notification email");
           } else {
-            return res
-              .status(200)
-              .json({ message: "Account notification email sent" });
+            console.log("[L MAILER] Account notification email sent");
           }
         })
         .catch((error) => {

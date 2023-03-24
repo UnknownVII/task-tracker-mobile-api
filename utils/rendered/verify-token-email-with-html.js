@@ -11,7 +11,7 @@ module.exports = function (req, res, next) {
       return res.render("main", {
         pageTitle: "Error",
         appTitle: "Task Tracker",
-        cardTitle: "Email Verification",
+        cardTitle: "Invalid Access",
         cardContent: "Access token has expired",
         contentState: "error",
       });
@@ -19,8 +19,8 @@ module.exports = function (req, res, next) {
     return res.render("main", {
       pageTitle: "Error",
       appTitle: "Task Tracker",
-      cardTitle: "Email Verification",
-      cardContent: `${err.message}`,
+      cardTitle: "Invalid Access",
+      cardContent: `Something went wrong`,
       contentState: "error",
     });
   }

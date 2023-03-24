@@ -286,7 +286,7 @@ router.post("/login", async (req, res) => {
     }
     await user.save();
     if (user.loginAttempts == MAX_LOGIN_ATTEMPTS) {
-      axios
+      await axios
         .get(
           `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
         )

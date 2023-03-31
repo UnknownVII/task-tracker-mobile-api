@@ -28,6 +28,7 @@ app.engine(
 );
 app.set("view engine", "handlebars");
 app.set("views", "./emails");
+
 app.use("/images", express.static(__dirname + "/emails/images"));
 app.use(
   "/favicon.ico",

@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="icon" type="image/png" href="/images/favicon.png" />
+    <title>Enter Code</title>
+    <style type="text/css">
+      body {
+        margin: 0;
+        font-family: "Roboto", sans-serif;
+        color: #021632;
+      }
+      .app-ico-svg {
+        width: 3.5rem;
+      }
+      .main-container {
+        height: 100vh;
+        width: 100vw;
+        background-color: #021632;
+        display: flex;
+        justify-content: center;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+      .contained {
+        display: flex;
+        flex-direction: column;
+        width: 30%;
+        height: fit-content;
+        min-width: 20rem;
+      }
+      .card {
+        height: 25rem;
+        background-color: #e4ebf8;
+        width: 100%;
+        position: relative;
+        box-shadow: 0 4px 20px 0 rgba(162, 162, 162, 0.5);
+        box-sizing: border-box;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        line-height: 2rem;
+        height: fit-content;
+      }
+
+      .error-shadow {
+        box-shadow: 0 4px 20px 0 rgba(253, 80, 103, 0.5);
+      }
+      .success-shadow {
+        box-shadow: 0 4px 20px 0 rgba(33, 230, 193, 0.5);
+      }
+
+      .card-header {
+        font-size: clamp(1vmin, 1.8rem, 2.5vmax);
+        font-weight: 700;
+      }
+      .card-content {
+        font-size: clamp(1.5vmin, 1.6rem, 2vmax);
+        padding: 1.75rem 0rem 2.75rem 0rem;
+        display: flex;
+        flex-direction: column;
+      }
+      .card-content-header {
+        padding-bottom: 1rem;
+      }
+      .card-button {
+        position: relative;
+        width: 15rem;
+        height: 4rem;
+        background: #21e6c1;
+        color: #021632;
+        font-size: 1.25rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        border-radius: 5px;
+        align-self: center;
+        border: 0;
+        cursor: pointer;
+        transition: all 250ms ease-in-out;
+        overflow: hidden;
+      }
+
+      .card-button:disabled {
+        background: #dbe3f0;
+        color: #02163276;
+        pointer-events: none;
+      }
+
+      .card-button:hover {
+        background: #23d8b7;
+        transition: all 150ms ease-in-out;
+      }
+
+      .card-footer {
+        height: 1.5rem;
+        width: 100%;
+        background-color: #818da050;
+        position: absolute;
+        left: 0;
+        bottom: 0;
+      }
+
+      .card-footer-success {
+        background-color: #21e6c1;
+        transition: all 150ms ease-in-out;
+      }
+      .card-footer-error {
+        background-color: #fd5066;
+        transition: all 150ms ease-in-out;
+      }
+
+      .outer-container {
+        height: fit-content;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        padding-top: 2.5rem;
+        padding-bottom: 2.5rem;
+      }
+      .outer-container-image {
+        width: 10rem;
+        height: 10rem;
+        color: #e4ebf8;
+      }
+      .outer-container-text {
+        color: #e4ebf8;
+        font-size: clamp(1.5vmin, 2rem, 2.5vmax);
+        font-weight: 700;
+        padding-top: 2.5rem;
+        padding-bottom: 2.5rem;
+        padding-left: 2.5rem;
+        text-transform: uppercase;
+      }
+
+      .form-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1.75rem;
+        box-sizing: border-box;
+      }
+
+      .form-container > .container {
+        align-self: flex-end;
+      }
+
+      .form-container-row-input {
+        display: flex;
+        gap: 0.25rem;
+      }
+
+      /* Chrome, Safari, Edge, Opera */
+      input::-webkit-outer-spin-button,
+      input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      /* Firefox */
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+
+      .text-input {
+        display: flex;
+        align-items: center;
+        position: relative;
+        box-sizing: border-box;
+      }
+
+      .text-input-field {
+        height: 4.25rem;
+        width: 100%;
+        align-content: center;
+        caret-color: #021632;
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+        border-radius: 5px;
+        border-style: solid;
+        border-color: #021632;
+        border-width: 1px;
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        transition: all 150ms ease-in-out;
+      }
+      .text-input-field:disabled {
+        border-color: #b3c6e9;
+      }
+      .text-input-field:hover:disabled {
+        border-color: #d8dce3;
+      }
+      .text-input-field::selection {
+        color: #021632;
+        background: #21e6c1;
+      }
+
+      .text-input-field:hover {
+        border-color: #21e6c298;
+      }
+      .text-input-field:focus {
+        outline: none !important;
+        border: 1px solid #21e6c1;
+        padding: 1.5rem;
+        transform: scale(1.1);
+      }
+
+      .text-input-field-note {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: #818da09c;
+        margin-top: 2.25rem;
+      }
+
+      .label-error {
+        color: #fd5066;
+        transition: all 250ms ease-in-out;
+      }
+      .label-success {
+        color: #021632;
+        transition: all 250ms ease-in-out;
+      }
+
+      .prefix-ico {
+        position: absolute;
+        left: 0;
+        padding-left: 1rem;
+      }
+
+      .suffix-ico {
+        position: absolute;
+        right: 1.75rem;
+      }
+
+      .button-icon:hover {
+        background-color: #818da017;
+      }
+
+      .prevent-select {
+        -webkit-user-select: none; /* Safari */
+        -ms-user-select: none; /* IE 10 and IE 11 */
+        user-select: none; /* Standard syntax */
+      }
+
+      .container {
+        width: fit-content;
+        position: relative;
+        padding-left: 35px;
+        cursor: pointer;
+        font-size: 22px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      .container input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
+      }
+
+      .loader {
+        width: 6.5rem;
+        aspect-ratio: 1/1;
+        padding: 0.75rem;
+        background: #21e6c1;
+        border-radius: 50%;
+        --_m: conic-gradient(#0000, #000), linear-gradient(#000 0 0) content-box;
+        -webkit-mask: var(--_m);
+        mask: var(--_m);
+        -webkit-mask-composite: source-out;
+        mask-composite: subtract;
+        box-sizing: border-box;
+        animation: load 1s linear infinite;
+      }
+
+      @keyframes load {
+        to {
+          transform: rotate(1turn);
+        }
+      }
+
+      .loader-contained {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .loader-container {
+        background-color: #021632;
+        position: absolute;
+        height: 100%;
+        overflow-y: hidden;
+        inset: 0;
+        top: 0;
+        right: 0;
+        background-color: rgba(0, 0, 0, 0.4392156863);
+        backdrop-filter: blur(3.5px);
+        width: 100%;
+        z-index: 99999;
+      }
+
+      .pop-up-container {
+        width: 30rem;
+        height: fit-content;
+        background-color: #dbe3f0;
+        z-index: 9999999999;
+        color: #021632;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .pop-up-container.show {
+        animation: grow 250ms cubic-bezier(0.5, -0.01, 0, 1.3);
+        animation-fill-mode: forwards;
+      }
+      .pop-up-container.hide {
+        animation: shrink 250ms cubic-bezier(0.5, -0.01, 0, 1.3);
+        animation-fill-mode: forwards;
+      }
+
+      .pop-up-header {
+        height: fit-content;
+        display: flex;
+        gap: 2.5rem;
+        align-items: center;
+        padding: 1.5rem 1.5rem 0 1.5rem;
+      }
+
+      .pop-up-header > :nth-child(2) {
+        font-size: 1.75rem;
+        font-weight: 700;
+      }
+
+      .pop-up-container > :nth-child(3) {
+        margin-bottom: 2.5rem;
+      }
+
+      .pop-up-header-close {
+        position: relative;
+        width: 3.25rem;
+        aspect-ratio: 1/1;
+        background: transparent;
+        color: #021632;
+        border-radius: 50rem;
+        align-self: center;
+        border: 0;
+        cursor: pointer;
+        transition: all 250ms ease-in-out;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+      }
+
+      .pop-up-header-close:hover {
+        background: #818da017;
+        transition: all 150ms ease-in-out;
+        transform: scale(1.1);
+      }
+
+      .pop-up-header-close:active {
+        transition: all 150ms ease-in-out;
+        transform: scale(0.8);
+      }
+
+      .pop-up-content {
+        word-wrap: break-word;
+        white-space: -moz-pre-wrap;
+        white-space: normal;
+        line-height: 1.8rem;
+        font-size: 1.5rem;
+        padding: 2rem 2rem 3rem 2rem;
+      }
+
+      span.ripple {
+        position: absolute;
+        aspect-ratio: 1/1;
+        width: 3.75rem;
+        border-radius: 50rem;
+        transform: scale(0);
+        animation: ripple 600ms linear;
+        background-color: #02163250;
+      }
+
+      @keyframes ripple {
+        to {
+          transform: scale(4);
+          opacity: 0;
+        }
+      }
+
+      @keyframes grow {
+        from {
+          transform: scale(0);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes shrink {
+        from {
+          transform: scale(1);
+          opacity: 1;
+        }
+        to {
+          transform: scale(0);
+          opacity: 0;
+        }
+      }
+
+      @media (min-width: 820px) {
+        .contained {
+          min-width: 10rem;
+        }
+      }
+      @media (min-width: 768px) {
+        .contained {
+          min-width: 30rem;
+        }
+      }
+      @media (min-width: 375px) {
+        .contained {
+          min-width: 10rem;
+        }
+      }
+      @media (min-width: 280px) {
+        .contained {
+          min-width: 15rem;
+        }
+        .card {
+          line-height: 1.5rem;
+        }
+      }
+      @media (min-width: 414px) {
+        .contained {
+          min-width: 20rem;
+        }
+        .card {
+          line-height: 1.5rem;
+        }
+      }
+
+      .shrink {
+        animation: shrink 750ms cubic-bezier(0.5, -0.01, 0, 1.3);
+        animation-fill-mode: forwards;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .link-footer {
+        color: #e4ebf8;
+        text-decoration: underline;
+      }
+
+      .link-footer:hover {
+        color: #c5c7cb;
+        transition: all 150ms ease-in-out;
+      }
+
+      .link-footer:active {
+        color: rgb(66, 72, 66);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main-container">
+      <div id="loader-container">
+        <div class="loader-contained">
+          <div id="loader"></div>
+          <div id="pop-up" class="pop-up-container">
+            <div class="pop-up-header">
+              <svg
+                class="pop-up-header-ico"
+                width="38"
+                height="38"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 2C6.49 2 2 6.49 2 12C2 17.51 6.49 22 12 22C17.51 22 22 17.51 22 12C22 6.49 17.51 2 12 2ZM12 17C11.45 17 11 16.55 11 16C11 15.45 11.45 15 12 15C12.55 15 13 15.45 13 16C13 16.55 12.55 17 12 17ZM13 12C13 12.55 12.55 13 12 13C11.45 13 11 12.55 11 12V8C11 7.45 11.45 7 12 7C12.55 7 13 7.45 13 8V12Z"
+                  fill="#FD5066"
+                />
+              </svg>
+              <div id="title" class="pop-up-header-title"></div>
+            </div>
+            <div id="message" class="pop-up-content"></div>
+            <button
+              tabindex="3"
+              id="pop-up-dismiss"
+              class="card-button prevent-select"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="contained">
+        <div class="outer-container">
+          <svg
+            class="app-ico-svg"
+            id="Layer_1"
+            data-name="Layer 1"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 399.45 551.49"
+          >
+            <defs>
+              <style>
+                .cls-1 {
+                  fill: #e4ebf7;
+                }
+                .cls-2 {
+                  fill: #60c4b0;
+                }
+              </style>
+            </defs>
+            <polygon
+              class="cls-1"
+              points="272.64 107.76 272.64 0 126.81 0 126.81 107.76 0 107.76 0 215.52 126.81 215.52 272.64 215.52 399.45 215.52 399.45 107.76 272.64 107.76"
+            />
+            <path class="cls-1" d="M126.81,336V443.73H0V336Z" />
+            <polygon
+              class="cls-2"
+              points="272.64 335.96 272.64 443.73 126.81 443.73 126.81 551.49 272.64 551.49 399.45 551.49 399.45 443.73 399.45 335.96 272.64 335.96"
+            />
+          </svg>
+          <div class="outer-container-text">Task Tracker</div>
+        </div>
+
+        <div id="card" class="card">
+          <div class="card-header">Enter 6-digit code</div>
+          <div class="suffix-ico">
+            <button
+              type="button"
+              id="input-clear"
+              class="pop-up-header-close hidden"
+              tabindex="-1"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 8 8"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M7.6066 0.535527C7.99763 0.926556 7.99692 1.55942 7.6066 1.94974L5.48528 4.07106L7.6066 6.19238C7.99763 6.58341 7.99692 7.21627 7.6066 7.60659C7.21628 7.99692 6.58342 7.99762 6.19239 7.6066L4.07107 5.48527L1.94975 7.60659C1.55942 7.99692 0.926563 7.99762 0.535534 7.60659C0.144504 7.21556 0.145211 6.5827 0.535534 6.19238L2.65685 4.07106L0.535534 1.94974C0.144504 1.55871 0.14521 0.92585 0.535533 0.535527C0.925856 0.145204 1.55872 0.144496 1.94975 0.535527L4.07107 2.65685L6.19239 0.535527C6.58271 0.145204 7.21557 0.144497 7.6066 0.535527Z"
+                  fill="black"
+                />
+              </svg>
+            </button>
+          </div>
+          <div class="card-content">
+            <div class="card-content-header">{{email}}</div>
+            <form id="form" class="form-container">
+              <div class="form-container-row-input">
+                <div class="text-input">
+                  <input
+                    type="text"
+                    class="text-input-field"
+                    required
+                    autocomplete="off"
+                    id="input1"
+                    tabindex="1"
+                    maxlength="1"
+                  />
+                </div>
+                <div class="text-input">
+                  <input
+                    type="text"
+                    class="text-input-field"
+                    required
+                    autocomplete="off"
+                    id="input2"
+                    tabindex="2"
+                    maxlength="1"
+                    disabled="true"
+                  />
+                </div>
+                <div class="text-input">
+                  <input
+                    type="text"
+                    class="text-input-field"
+                    required
+                    autocomplete="off"
+                    id="input3"
+                    tabindex="3"
+                    maxlength="1"
+                    disabled="true"
+                  />
+                </div>
+                <div class="text-input">
+                  <input
+                    type="text"
+                    class="text-input-field"
+                    required
+                    autocomplete="off"
+                    id="input4"
+                    tabindex="4"
+                    maxlength="1"
+                    disabled="true"
+                  />
+                </div>
+                <div class="text-input">
+                  <input
+                    type="text"
+                    class="text-input-field"
+                    required
+                    autocomplete="off"
+                    id="input5"
+                    tabindex="5"
+                    disabled="true"
+                    maxlength="1"
+                  />
+                </div>
+                <div class="text-input">
+                  <input
+                    type="text"
+                    class="text-input-field"
+                    required
+                    autocomplete="off"
+                    id="input6"
+                    tabindex="6"
+                    disabled="true"
+                    maxlength="1"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                class="card-button prevent-select"
+                disabled="true"
+                tabindex="7"
+              >
+                Send
+              </button>
+            </form>
+
+            <div id="validation-status" class="text-input-field-note">
+              <div></div>
+            </div>
+          </div>
+          <div id="footer" class="card-footer"></div>
+        </div>
+        <div
+          style="
+            color: #e4ebf8;
+            line-height: 180%;
+            text-align: center;
+            word-wrap: break-word;
+            margin-top: 2.5rem;
+          "
+        >
+          <p class="prevent-select" style="line-height: 180%">
+            © 2022-2023 Company®, All Rights Reserved<br />Address Address •
+            Address Address • Address Address<br /><a
+              class="link-footer"
+              rel="noopener"
+              href="#"
+              target="_blank"
+              >Contact Us</a
+            >
+            •
+            <a class="link-footer" rel="noopener" href="#" target="_blank"
+              >Terms of Use</a
+            >
+            •
+            <a class="link-footer" rel="noopener" href="#" target="_blank"
+              >Privacy Policy</a
+            >
+          </p>
+        </div>
+      </div>
+    </div>
+    <script>
+      const input1 = document.querySelector("#input1");
+      const input2 = document.querySelector("#input2");
+      const input3 = document.querySelector("#input3");
+      const input4 = document.querySelector("#input4");
+      const input5 = document.querySelector("#input5");
+      const input6 = document.querySelector("#input6");
+      const inputs = document.querySelectorAll('input[type="text"]');
+      const maxIndex = inputs.length - 1;
+
+      const loaderContainer = document.querySelector("#loader-container");
+      const loader = document.querySelector("#loader");
+      const popUpContainer = document.querySelector("#pop-up");
+      popUpContainer.style.display = "none";
+      const form = document.querySelector("#form");
+      const clearBtn = document.getElementById("input-clear");
+      const clearBtn2 = document.getElementById("input-clear-2");
+      const dismissButton = document.querySelector("#pop-up-dismiss");
+      const submitButton = document.querySelector('button[type="submit"]');
+      const footerStatus = document.querySelector("#footer");
+      const validationStatus = document.querySelector("#validation-status");
+      const showPasswordCheckbox = document.querySelector("#show-password");
+      const cardShadow = document.querySelector("#card");
+      const inputStatus = validationStatus?.querySelector(":nth-of-type(1)");
+
+      clearBtn.addEventListener("click", function (event) {
+        createRipple(event);
+        form.reset();
+        inputs.disabled = true;
+        inputs[5].disabled = true;
+        inputs[4].disabled = true;
+        inputs[3].disabled = true;
+        inputs[2].disabled = true;
+        inputs[1].disabled = true;
+        inputs[0].disabled = false;
+        input1.focus();
+        footerStatus.classList.toggle("card-footer-success", false);
+        footerStatus.classList.toggle("card-footer-error", false);
+        cardShadow.classList.toggle("success-shadow", false);
+        cardShadow.classList.toggle("error-shadow", false);
+
+        submitButton.disabled = "true";
+        validationStatus.style.display = "none";
+      });
+
+      form.addEventListener("input", function (event) {
+        const digit = input6.value;
+        const isValidInput = checkAllInputs(digit);
+        clearBtn.classList.remove("hidden");
+
+        if (inputs[0].value === "") {
+          clearBtn.classList.add("shrink");
+          clearBtn.addEventListener(
+            "animationstart",
+            function () {
+              clearBtn.classList.remove("shrink");
+              const spanRipple = clearBtn.querySelector("span.ripple");
+              spanRipple?.remove();
+              clearBtn.classList.add("hidden");
+            },
+            { once: true }
+          );
+        }
+
+        submitButton.disabled = !isValidInput;
+
+        footerStatus.classList.toggle("card-footer-success", isValidInput);
+        footerStatus.classList.toggle("card-footer-error", !isValidInput);
+
+        cardShadow.classList.toggle("success-shadow", isValidInput);
+        cardShadow.classList.toggle("error-shadow", !isValidInput);
+
+        validationStatus.style.display = "flex";
+
+        if (inputStatus) {
+          inputStatus.textContent = isValidInput
+            ? `Email is valid`
+            : `${digit === "" ? "Code is incomplete" : "Code is not valid"}`;
+          inputStatus.classList.toggle("label-success", isValidInput);
+          inputStatus.classList.toggle("label-error", !isValidInput);
+        }
+
+        submitButton.disabled = !isValidInput;
+        footerStatus.classList.toggle("card-footer-success", isValidInput);
+        footerStatus.classList.toggle("card-footer-error", !isValidInput);
+        cardShadow.classList.toggle("success-shadow", isValidInput);
+        cardShadow.classList.toggle("error-shadow", !isValidInput);
+
+        validationStatus.style.display = `${isValidInput ? "none" : "block"}`;
+      });
+
+      submitButton.addEventListener("click", function (event) {
+        createRipple(event);
+        form.blur();
+        loaderContainer.classList.toggle("loader-container", true);
+        loader.classList.toggle("loader", true);
+      });
+
+      submitButton.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          form.blur();
+          submitButton.focus();
+          loaderContainer.classList.toggle("loader-container", true);
+          loader.classList.toggle("loader", true);
+          form.dispatchEvent(new Event("submit"));
+        }
+      });
+
+      form.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+        }
+      });
+
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        submitButton.disabled = true;
+        inputs.disabled = true;
+
+        const formData = new FormData();
+        const code = `${input1.value}${input2.value}${input3.value}${input4.value}${input5.value}${input6.value}`;
+
+        formData.append("code", code);
+
+        const jsonObject = Object.fromEntries(formData.entries());
+        console.log(jsonObject);
+        try {
+          const response = await fetch(
+            "{{urlLink}}",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(jsonObject),
+            }
+          );
+          const dat = await response.json();
+
+          if (response.status === 200) {
+            loader.classList.toggle("loader", true); 
+            window.history.replaceState(null, "", dat.redirectUrl); 
+            window.location.href = dat.redirectUrl;
+          } else if (response.status === 400) {
+            document.getElementById("title").innerHTML = "Error";
+            document.getElementById("message").innerHTML = dat.error;
+            loader.classList.toggle("loader", false);
+            popUpContainer.style.display = "flex";
+            popUpContainer.classList.toggle("show", true);
+            dismissButton.focus();
+          }
+        } catch (e) {
+          document.getElementById("title").innerHTML = "Server: Error";
+          document.getElementById("message").innerHTML = e;
+
+          loader.classList.toggle("loader", false);
+          popUpContainer.style.display = "flex";
+          popUpContainer.classList.toggle("show", true);
+          dismissButton.focus();
+        }
+      });
+
+      function createRipple(event) {
+        const button = event.currentTarget;
+        const buttonRect = button.getBoundingClientRect();
+
+        const circle = document.createElement("span");
+        const diameter = Math.max(button.clientWidth, button.clientHeight);
+        const radius = diameter / 2;
+
+        const x = event.pageX - buttonRect.left - window.pageXOffset - radius;
+        const y = event.pageY - buttonRect.top - window.pageYOffset - radius;
+
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${x}px`;
+        circle.style.top = `${y}px`;
+        circle.classList.add("ripple");
+
+        const ripple = button.getElementsByClassName("ripple")[0];
+
+        if (ripple) {
+          ripple.remove();
+        }
+
+        button.appendChild(circle);
+      }
+
+      dismissButton.addEventListener("click", function (event) {
+        createRipple(event);
+        submitButton.disabled = false;
+        setTimeout(function () {
+          popUpContainer.classList.add("hide");
+          popUpContainer.addEventListener(
+            "animationend",
+            function () {
+              loaderContainer.classList.toggle("loader-container", false);
+              loader.classList.toggle("loader", false);
+              popUpContainer.classList.remove("hide");
+              popUpContainer.classList.remove("show");
+              const spanRipple = dismissButton.querySelector("span.ripple");
+              spanRipple.remove();
+              popUpContainer.style.display = "none";
+              inputs[5].disabled = false;
+              inputs[5].focus();
+            },
+            { once: true }
+          );
+        }, 175);
+      });
+
+      function validateInput(number) {
+        const regex = /\d/;
+        const testRegex = regex.test(number);
+        return regex.test(number);
+      }
+
+      function checkAllInputs() {
+        const values = [...inputs].map((input) => input.value);
+        const isFilled = values.every((value) => value !== "");
+        const isValid = values.every((value) => validateInput(value));
+        const formIsValid = isFilled && isValid;
+        return formIsValid;
+      }
+
+      inputs[0].disabled = false;
+      inputs[0].focus();
+
+      function moveToNext(event) {
+        const input = event.target;
+        const index = Array.from(inputs).indexOf(input);
+        if (index < maxIndex) {
+          const nextInput = inputs[index + 1];
+          nextInput.disabled = false;
+          nextInput.value = " ";
+          nextInput.select();
+          input.disabled = true;
+        }
+      }
+
+      function moveToPrevious(event) {
+        const input = event.target;
+        const index = Array.from(inputs).indexOf(input);
+        if (index > 0) {
+          const prevInput = inputs[index - 1];
+          prevInput.disabled = false;
+          prevInput.select();
+          input.disabled = true;
+        }
+      }
+
+      inputs.forEach((input, index) => {
+        input.addEventListener("input", (event) => {
+          const value = event.target.value;
+          const sanitizedValue = sanitizeInput(value);
+          const isBackspace =
+            event.inputType === "deleteContentBackward" ||
+            event.key === "Backspace";
+          if (validateInput(value)) {
+            if (value) {
+              moveToNext(event);
+            }
+            1;
+          } else {
+            if (isBackspace) {
+              moveToPrevious(event);
+            } else {
+              event.target.value = "";
+            }
+          }
+          checkAllInputs();
+        });
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        inputs.forEach(function (textInput) {
+          textInput.addEventListener("paste", function (e) {
+            e.preventDefault();
+            const text = e.clipboardData.getData("text/plain");
+            const textArray = text.split("");
+
+            inputs.forEach(function (input, index) {
+              input.value = textArray[index] || "";
+              input.dispatchEvent(new Event("input"));
+              form.dispatchEvent(new Event("input"));
+            });
+          });
+        });
+      });
+
+      function sanitizeInput(input) {
+        return input.replace(/[^0-9]/g, "").substring(0, 6);
+      }
+    </script>
+  </body>
+</html>

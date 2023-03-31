@@ -8,7 +8,7 @@ module.exports = function (req, res, next) {
     next();
   } catch (err) {
     if (err.name === "TokenExpiredError") {
-      return res.render("main", {
+      return res.render("layouts/main", {
         pageTitle: "Error",
         appTitle: "Task Tracker",
         cardTitle: "Invalid Access",
@@ -16,7 +16,7 @@ module.exports = function (req, res, next) {
         contentState: "error",
       });
     }
-    return res.render("main", {
+    return res.render("layouts/main", {
       pageTitle: "Error",
       appTitle: "Task Tracker",
       cardTitle: "Invalid Access",

@@ -36,6 +36,24 @@ const taskValidation = (data) => {
   return schema.validate(data);
 };
 
+//EMAIL VALIDATION
+const emailValidation = (data) => {
+  const schema = Joi.object({
+    email: Joi.string().min(6).required().email(),
+  });
+  return schema.validate(data);
+};
+
+//PASSWORD VALIDATION
+const passwordValidation = (data) => {
+  const schema = Joi.object({
+    password: Joi.string().min(6).required(),
+  });
+  return schema.validate(data);
+};
+
 module.exports.taskValidation = taskValidation;
 module.exports.loginValidation = loginValidation;
 module.exports.registerValidation = registerValidation;
+module.exports.emailValidation = emailValidation;
+module.exports.passwordValidation = passwordValidation;

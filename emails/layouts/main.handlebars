@@ -4,57 +4,107 @@
     <title>{{pageTitle}}</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/styles.css" />
   </head>
   <style>
     body { margin: 0; font-family: "Roboto", sans-serif; color: #021632; }
-    .main-container { height: 100vh; width: 100vw; background-color: #021632;
-    display: flex; justify-content: center; } .contained { display: flex;
-    flex-direction: column; width: 30%; height: fit-content; min-width: 20rem; }
-    .card { height: 25rem; background-color: #e4ebf8; width: 100%; position:
-    relative; box-sizing: border-box; padding: 1.5rem; display: flex;
-    flex-direction: column; line-height: 2rem; height: fit-content; }
-    .card-header { font-size: clamp(1vmin, 1.8rem, 2.5vmax); font-weight: 700; }
-    .card-content { text-transform: capitalize; font-size: clamp(1.5vmin,
-    1.6rem, 2vmax); padding: 3.5vmax 0rem; } .card-button { width: 15rem;
-    height: 4rem; background: #21e6c1; color: #021632; font-size: 1.25rem;
-    font-weight: 700; text-transform: uppercase; border-radius: 5px; align-self:
-    center; border: 0; cursor: pointer; } .card-button:hover { background:
-    #23d8b7; transition: all 150ms ease-in-out; } .card-footer { height: 1.5rem;
-    width: 100%; position: absolute; left: 0; bottom: 0; } .outer-container {
-    height: fit-content; width: 100%; display: flex; flex-direction: row;
-    align-items: center; } .outer-container-image { width: 5rem; height: 5rem;
-    color: #e4ebf8; } .outer-container-text { color: #e4ebf8; font-size:
-    clamp(1.5vmin, 2rem, 2.5vmax); font-weight: 700; padding-top: 2.5rem;
-    padding-bottom: 2.5rem; padding-left: 2.5rem; } @media (min-width: 820px) {
-    .contained { min-width: 10rem; } } @media (min-width: 768px) { .contained {
-    min-width: 30rem; } } @media (min-width: 375px) { .contained { min-width:
-    10rem; } } @media (min-width: 280px) { .contained { min-width: 15rem; }
-    .card { line-height: 1.5rem; } } @media (min-width: 414px) { .contained {
-    min-width: 20rem; } .card { line-height: 1.5rem; } } .error {
-    background-color: #FD5066; } .success { background-color: #21e6c1; }
-    .error-shadow { box-shadow: 0 4px 20px 0 rgba(253, 80, 103, 0.5)}
-    .success-shadow{ box-shadow: 0 4px 20px 0 rgba( 33, 230, 193, 0.5)}
-
+    .app-ico-svg { width: 3.5rem; } .main-container { height: 100vh; width:
+    100vw; background-color: #021632; display: flex; justify-content: center; }
+    .contained { display: flex; flex-direction: column; width: 30%; height:
+    fit-content; min-width: 20rem; } .card { background-color: #e4ebf8; width:
+    100%; position: relative; box-shadow: 0 4px 20px 0 rgba(162, 162, 162, 0.5);
+    box-sizing: border-box; padding: 1.5rem; display: flex; flex-direction:
+    column; line-height: 2rem; height: fit-content; } .card-header { font-size:
+    clamp(1vmin, 1.8rem, 2.5vmax); font-weight: 700; } .card-content {
+    text-transform: capitalize; font-size: clamp(1.5vmin, 1.6rem, 2vmax);
+    padding: 3.5vmax 0rem; } .card-button { width: 15rem; height: 4rem;
+    background: #21e6c1; color: #021632; font-size: 1.25rem; font-weight: 700;
+    text-transform: uppercase; border-radius: 5px; align-self: center; border:
+    0; cursor: pointer; } .card-button:hover { background: #23d8b7; transition:
+    all 150ms ease-in-out; } .card-footer { height: 1.5rem; width: 100%;
+    position: absolute; left: 0; bottom: 0; background-color: #c4cddc; }
+    .outer-container { height: fit-content; width: 100%; display: flex;
+    flex-direction: row; align-items: center; justify-content: center;
+    padding-top: 2.5rem; padding-bottom: 2.5rem; } .outer-container-image {
+    width: 10rem; height: 10rem; color: #e4ebf8; } .outer-container-text {
+    color: #e4ebf8; font-size: clamp(1.5vmin, 2rem, 2.5vmax); font-weight: 700;
+    padding-top: 2.5rem; padding-bottom: 2.5rem; padding-left: 2.5rem;
+    text-transform: uppercase;} @media (min-width: 820px) { .contained {
+    min-width: 10rem; } } @media (min-width: 768px) { .contained { min-width:
+    30rem; } } @media (min-width: 375px) { .contained { min-width: 10rem; } }
+    @media (min-width: 280px) { .contained { min-width: 15rem; } .card {
+    line-height: 1.5rem; } } @media (min-width: 414px) { .contained { min-width:
+    20rem; } .card { line-height: 1.5rem; } } .error { background-color:
+    #fd5066; } .success { background-color: #21e6c1; } .error-shadow {
+    box-shadow: 0 4px 20px 0 rgba(253, 80, 103, 0.5); } .success-shadow {
+    box-shadow: 0 4px 20px 0 rgba(33, 230, 193, 0.5); } .prevent-select {
+    -webkit-user-select: none; /* Safari */ -ms-user-select: none; /* IE 10 and
+    IE 11 */ user-select: none; /* Standard syntax */ } .link-footer { color:
+    #e4ebf8; text-decoration: underline; } .link-footer:hover { color: #c5c7cb;
+    transition: all 150ms ease-in-out; } .link-footer:active { color: rgb(66,
+    72, 66); }
   </style>
   <body>
     <div class="main-container">
       <div class="contained">
         <div class="outer-container">
-          <img
-            class="outer-container-img"
-            src="/images/app-ico-image.png"
-            alt="app-ico-image"
-          />
+          <svg
+            class="app-ico-svg"
+            id="Layer_1"
+            data-name="Layer 1"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 399.45 551.49"
+          >
+            <defs>
+              <style>
+                .cls-1 { fill: #e4ebf7; } .cls-2 { fill: #60c4b0; }
+              </style>
+            </defs>
+            <polygon
+              class="cls-1"
+              points="272.64 107.76 272.64 0 126.81 0 126.81 107.76 0 107.76 0 215.52 126.81 215.52 272.64 215.52 399.45 215.52 399.45 107.76 272.64 107.76"
+            ></polygon>
+            <path class="cls-1" d="M126.81,336V443.73H0V336Z"></path>
+            <polygon
+              class="cls-2"
+              points="272.64 335.96 272.64 443.73 126.81 443.73 126.81 551.49 272.64 551.49 399.45 551.49 399.45 443.73 399.45 335.96 272.64 335.96"
+            ></polygon>
+          </svg>
           <div class="outer-container-text">{{appTitle}}</div>
         </div>
+
         <div class="card {{contentState}}-shadow">
           <div class="card-header">{{cardTitle}}</div>
           <div class="card-content">{{{cardContent}}}</div>
-          {{!-- <button class="card-button">{{buttonText}}</button> --}}
-
           <div class="card-footer {{contentState}}"></div>
-
+        </div>
+        <div
+          style="
+            color: #e4ebf8;
+            line-height: 180%;
+            text-align: center;
+            word-wrap: break-word;
+            margin-top: 2.5rem;
+          "
+        >
+          <p class="prevent-select" style="line-height: 180%">
+            © 2022-2023 Company®, All Rights Reserved<br />Address Address •
+            Address Address • Address Address<br /><a
+              class="link-footer"
+              rel="noopener"
+              href="#"
+              target="_blank"
+            >Contact Us</a>
+            •
+            <a class="link-footer" rel="noopener" href="#" target="_blank">Terms
+              of Use</a>
+            •
+            <a
+              class="link-footer"
+              rel="noopener"
+              href="#"
+              target="_blank"
+            >Privacy Policy</a>
+          </p>
         </div>
       </div>
     </div>

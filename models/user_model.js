@@ -24,7 +24,8 @@ const tokenSchema = new mongoose.Schema({
     type: String,
     enum: [
       "emailVerification",
-      "passwordReset",
+      "passwordResetToken",
+      "passwordResetDigit",
       "userAccessToken",
       "smsVerification",
     ],
@@ -43,9 +44,11 @@ const tokenSchema = new mongoose.Schema({
       } else if (this.type === "emailVerification") {
         return moment().add(1, "hour").toDate();
       } else if (this.type === "smsVerification") {
-        return moment().add(5, "minutes").toDate();
+        return moment().add(15, "minutes").toDate();
+      } else if (this.type === "passwordResetToken") {
+        return moment().add(10, "minutes").toDate();
       } else {
-        return moment().add(5, "minutes").toDate();
+        return moment().add(10, "minutes").toDate();
       }
     },
   },

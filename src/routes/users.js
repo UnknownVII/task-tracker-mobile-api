@@ -1,16 +1,13 @@
 const bcrypt = require("bcryptjs");
-const crypto = require("crypto");
 const express = require("express");
-const handlebars = require("nodemailer-express-handlebars");
 const jwt = require("jsonwebtoken");
 const moment = require("moment");
-const nodemailer = require("nodemailer");
-const path = require("path");
 const User = require("../../models/user_model");
 const axios = require("axios");
 const generateVerificationCode = require("../../utils/generate-6-digit");
 const generateId = require("../../utils/generate-email-id");
 const sendMail = require("../../utils/compose-email");
+
 const {
   getAccessToken,
 } = require("../../utils/token-authentication/oauth-access-token");
@@ -21,19 +18,6 @@ const {
 const verify = require("../../utils/token-authentication/verify-token");
 const router = express.Router();
 const MAX_LOGIN_ATTEMPTS = 5;
-let accessToken;
-
-const smtpTransport = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    type: "OAuth2",
-    user: process.env.NODE_MAILER_EMAIL,
-    clientId: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
-    refreshToken: process.env.REFRESH_TOKEN,
-    accessToken: accessToken,
-  },
-});
 
 const ipaddr = require("ipaddr.js");
 
@@ -184,6 +168,92 @@ router.post("/send-email-verification/:id", async (req, res) => {
   }
 });
 
+router.post("/send-change-password-token/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const passwordResetToken = user.tokens.find(
+      (token) => token.type === "passwordResetToken"
+    );
+
+    if (passwordResetToken) {
+      if (passwordResetToken.used) {
+        return res.status(400).json({ message: "Password already changed" });
+      }
+      if (passwordResetToken.expiresAt > Date.now()) {
+        return res.status(400).json({ message: "Check your email" });
+      }
+    }
+
+    const passResetToken = jwt.sign(
+      { _id: user._id },
+      process.env.TOKEN_SECRET,
+      {
+        expiresIn: "15m",
+      }
+    );
+
+    const convertedHash = passResetToken.toString().replace(/\./g, "*");
+    const expiresAt = Date.now() + 15 * 60 * 1000;
+
+    const tokenIndex = user.tokens.findIndex(
+      (t) => t.type === "passwordResetToken"
+    );
+
+    if (tokenIndex !== -1) {
+      // Token already exists, update it
+      user.tokens[tokenIndex].token = passResetToken;
+      user.tokens[tokenIndex].expiresAt = expiresAt;
+    } else {
+      // Token does not exist, add it
+      user.tokens.push({
+        type: "passwordResetToken",
+        token: passResetToken,
+        expiresAt: expiresAt,
+      });
+    }
+
+    const verificationURL = `${
+      global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
+    }/api/verify/${convertedHash}/change-password`;
+
+    // Send email verification email
+    const mailOptions = {
+      from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
+      to: user.email,
+      subject: "Password Change Notification",
+      template: "changePassword",
+      attachments: [
+        {
+          filename: "app-ico-image.png",
+          path: "./emails/images/app-ico-image.png",
+          cid: "imageURL",
+        },
+      ],
+      context: {
+        name: user.name,
+        url: verificationURL,
+        emailId: generateId(24),
+      },
+    };
+    const emailSent = await sendMail(mailOptions);
+    if (!emailSent) {
+      return res
+        .status(400)
+        .json({ error: "Failed to send change password email" });
+    }
+    await user.save();
+    res.status(200).json({ message: "Change password email sent" });
+  } catch (err) {
+    console.error(`[MAILER  ] ${err}`);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/send-sms-verification/:id", async (req, res) => {
   const verificationCode = generateVerificationCode();
   try {
@@ -286,6 +356,9 @@ router.post("/login", async (req, res) => {
     }
     await user.save();
     if (user.loginAttempts == MAX_LOGIN_ATTEMPTS) {
+      const verificationURL = `${
+        global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
+      }/api/login/identify`;
       await axios
         .get(
           `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
@@ -295,7 +368,7 @@ router.post("/login", async (req, res) => {
             from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
             to: user.email,
             subject: "Account Lockout Notification",
-            template: "account",
+            template: "accountLockout",
             attachments: [
               {
                 filename: "app-ico-image.png",
@@ -310,6 +383,7 @@ router.post("/login", async (req, res) => {
               ip: response.data.ip,
               isProxy: response.data.is_proxy,
               zipCode: response.data.zip_code,
+              urlLink: verificationURL,
               emailId: generateId(24),
             },
           };
@@ -479,6 +553,89 @@ router.get("/:userId/check-token", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//CHANGE PASSWORD
+router.patch("/:userId/change-password", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if the request contains the required fields
+    if (!req.body.password) {
+      return res.status(400).json({ error: "Password is required" });
+    }
+
+    // Set the new password for the user
+    //HASH PASSWORDS
+    const saltRounds = 10;
+    const salt = bcrypt.genSaltSync(saltRounds, "aA1!");
+    const hashPassword = await bcrypt.hash(req.body.password, salt);
+
+    user.password = hashPassword;
+    user.isLocked = false;
+    user.loginAttempts = 0;
+
+    // Mark all password reset tokens as used
+    user.tokens.forEach((token) => {
+      if (token.type === "passwordResetToken" && !token.used) {
+        token.used = true;
+        token.usedDate = Date.now();
+      }
+    });
+
+    const ipv6 = req.ip.toString();
+    let ipv4;
+
+    if (ipv6 === "::1") {
+      ipv4 = "0000:0000:0000:0000:0000:0000:0000:0001";
+    } else {
+      ipv4 = ipaddr.process(ipv6).toString();
+    }
+
+    await axios
+      .get(
+        `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
+      )
+      .then(async (response) => {
+        const mailOptions = {
+          from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
+          to: user.email,
+          subject: "Password Change Notification",
+          template: "changePasswordSuccess",
+          context: {
+            name: user.name,
+            countryName: response.data.country_name,
+            cityName: response.data.city_name,
+            ip: response.data.ip,
+            isProxy: response.data.is_proxy,
+            zipCode: response.data.zip_code,
+            emailId: generateId(24),
+          },
+        };
+        const emailSent = await sendMail(mailOptions);
+        if (!emailSent) {
+          console.log("[L MAILER] Failed to send account notification email");
+        } else {
+          console.log("[L MAILER] Account notification email sent");
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+
+    // Save the updated user
+    await user.save();
+
+    return res.status(200).json({ message: "Password updated successfully" });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 

@@ -4,16 +4,17 @@ const jwt = require("jsonwebtoken");
 const moment = require("moment");
 const User = require("../../models/user_model");
 const axios = require("axios");
-const generateVerificationCode = require("../../utils/generate-6-digit");
+
 const generateId = require("../../utils/generate-email-id");
 const sendMail = require("../../utils/compose-email");
-
+const verifyTokenRendered = require("../../utils/rendered/verify-token-email-with-html");
 const {
   getAccessToken,
 } = require("../../utils/token-authentication/oauth-access-token");
 const {
   registerValidation,
   loginValidation,
+  passwordValidation,
 } = require("../../utils/joi-schema-validation/validate");
 const verify = require("../../utils/token-authentication/verify-token");
 const router = express.Router();
@@ -59,252 +60,6 @@ router.post("/register", async (req, res) => {
     res.status(200).json({ message: "Account Created Successfully" });
   } catch (err) {
     res.status(400).json({ error: err.message });
-  }
-});
-
-router.post("/send-email-verification/:id", async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const emailVerificationVerified = user.verifications.find(
-      (verification) => verification.type === "emailVerification"
-    );
-
-    if (emailVerificationVerified) {
-      if (emailVerificationVerified.verified) {
-        return res.status(400).json({ message: "Email already verified" });
-      }
-    }
-
-    const emailVerificationToken = user.tokens.find(
-      (token) => token.type === "emailVerification"
-    );
-
-    if (emailVerificationToken) {
-      if (emailVerificationToken.used) {
-        return res.status(400).json({ message: "Email already verified" });
-      }
-      if (emailVerificationToken.expiresAt > Date.now()) {
-        return res.status(400).json({ message: "Check your email" });
-      }
-    }
-
-    const emailToken = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET, {
-      expiresIn: "5m",
-    });
-
-    const convertedHash = emailToken.toString().replace(/\./g, "*");
-
-    const expiresAt = Date.now() + 300000; // Expires in 5 minutes
-    const tokenIndex = user.tokens.findIndex(
-      (t) => t.type === "emailVerification"
-    );
-    const verifiedIndex = user.verifications.findIndex(
-      (t) => t.type === "emailVerification"
-    );
-
-    if (verifiedIndex !== -1) {
-      // verified already exists, update it
-      user.verifications[verifiedIndex].verificationSentDate = new Date();
-    } else {
-      // verified does not exist, add it
-      user.verifications.push({
-        type: "emailVerification",
-        verificationSentDate: new Date(),
-      });
-    }
-
-    if (tokenIndex !== -1) {
-      // Token already exists, update it
-      user.tokens[tokenIndex].token = emailToken;
-      user.tokens[tokenIndex].expiresAt = expiresAt;
-    } else {
-      // Token does not exist, add it
-      user.tokens.push({
-        type: "emailVerification",
-        token: emailToken,
-        expiresAt: expiresAt,
-      });
-    }
-
-    const verificationURL = `${
-      global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
-    }/api/verify/${convertedHash}`;
-
-    // Send email verification email
-    const mailOptions = {
-      from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
-      to: user.email,
-      subject: "Verify your email",
-      template: "main",
-      attachments: [
-        {
-          filename: "app-ico-image.png",
-          path: "./emails/images/app-ico-image.png",
-          cid: "imageURL",
-        },
-      ],
-      context: {
-        name: user.name,
-        url: verificationURL,
-        emailId: generateId(24),
-      },
-    };
-    const emailSent = await sendMail(mailOptions);
-    if (!emailSent) {
-      return res
-        .status(400)
-        .json({ error: "Failed to send verification email" });
-    }
-    await user.save();
-    res.status(200).json({ message: "Verification email sent" });
-  } catch (err) {
-    console.error(`[MAILER  ] ${err}`);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-router.post("/send-change-password-token/:id", async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const passwordResetToken = user.tokens.find(
-      (token) => token.type === "passwordResetToken"
-    );
-
-    if (passwordResetToken) {
-      if (passwordResetToken.used) {
-        return res.status(400).json({ message: "Password already changed" });
-      }
-      if (passwordResetToken.expiresAt > Date.now()) {
-        return res.status(400).json({ message: "Check your email" });
-      }
-    }
-
-    const passResetToken = jwt.sign(
-      { _id: user._id },
-      process.env.TOKEN_SECRET,
-      {
-        expiresIn: "15m",
-      }
-    );
-
-    const convertedHash = passResetToken.toString().replace(/\./g, "*");
-    const expiresAt = Date.now() + 15 * 60 * 1000;
-
-    const tokenIndex = user.tokens.findIndex(
-      (t) => t.type === "passwordResetToken"
-    );
-
-    if (tokenIndex !== -1) {
-      // Token already exists, update it
-      user.tokens[tokenIndex].token = passResetToken;
-      user.tokens[tokenIndex].expiresAt = expiresAt;
-    } else {
-      // Token does not exist, add it
-      user.tokens.push({
-        type: "passwordResetToken",
-        token: passResetToken,
-        expiresAt: expiresAt,
-      });
-    }
-
-    const verificationURL = `${
-      global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
-    }/api/verify/${convertedHash}/change-password`;
-
-    // Send email verification email
-    const mailOptions = {
-      from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
-      to: user.email,
-      subject: "Password Change Notification",
-      template: "changePassword",
-      attachments: [
-        {
-          filename: "app-ico-image.png",
-          path: "./emails/images/app-ico-image.png",
-          cid: "imageURL",
-        },
-      ],
-      context: {
-        name: user.name,
-        url: verificationURL,
-        emailId: generateId(24),
-      },
-    };
-    const emailSent = await sendMail(mailOptions);
-    if (!emailSent) {
-      return res
-        .status(400)
-        .json({ error: "Failed to send change password email" });
-    }
-    await user.save();
-    res.status(200).json({ message: "Change password email sent" });
-  } catch (err) {
-    console.error(`[MAILER  ] ${err}`);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-router.post("/send-sms-verification/:id", async (req, res) => {
-  const verificationCode = generateVerificationCode();
-  try {
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    try {
-      const userNum = await User.findOne({ phone_number: user.phoneNumber });
-
-      if (!userNum) {
-        return res.status(404).send("User's phone number not found");
-      }
-
-      user.tokens.push({
-        type: "smsVerification",
-        token: verificationCode,
-        expiresAt: moment().add(5, "minutes").toDate(),
-      });
-
-      const options = {
-        method: "POST",
-        url: process.env.RAPID_API_URL,
-        params: {
-          phoneNumber: user.phoneNumber,
-          verifyCode: verificationCode,
-          appName: "Task Tracker",
-        },
-        headers: {
-          "X-RapidAPI-Key": process.env.RAPID_API_KEY,
-          "X-RapidAPI-Host": process.env.RAPID_API_HOST,
-        },
-      };
-      axios
-        .request(options)
-        .then(async function (response) {
-          console.log(response.data);
-          await user.save();
-          res.status(200).send("Verification code sent successfully");
-        })
-        .catch(function (error) {
-          console.error(error);
-        });
-    } catch (err) {
-      console.error(err);
-      res.status(500).send("Error sending verification code");
-    }
-  } catch (err) {
-    console.error(`[SMS     ] ${err}`);
-    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -442,17 +197,15 @@ router.post("/login", async (req, res) => {
   );
 
   if (!userAccessToken) {
-    // create a new token if one doesn't exist
     user.tokens.push({
       type: "userAccessToken",
       token: accessToken,
       expiresAt: moment().add(7, "days").toDate(),
     });
   } else {
-    // update the existing token if it exists
     userAccessToken.token = accessToken;
     userAccessToken.used = false;
-    userAccessToken.expiresAt = moment().add(7, "days").toDate(); // update the expiration time
+    userAccessToken.expiresAt = moment().add(7, "days").toDate();
   }
 
   user.save((err) => {
@@ -556,87 +309,261 @@ router.get("/:userId/check-token", async (req, res) => {
   }
 });
 
-//CHANGE PASSWORD
-router.patch("/:userId/change-password", async (req, res) => {
+//SEND EMAIL VERIFICATION
+router.post("/send-email-verification/:id", async (req, res) => {
   try {
-    const userId = req.params.userId;
-    const user = await User.findById(userId);
+    const user = await User.findById(req.params.id);
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if the request contains the required fields
-    if (!req.body.password) {
-      return res.status(400).json({ error: "Password is required" });
-    }
+    const emailVerificationVerified = user.verifications.find(
+      (verification) => verification.type === "emailVerification"
+    );
 
-    // Set the new password for the user
-    //HASH PASSWORDS
-    const saltRounds = 10;
-    const salt = bcrypt.genSaltSync(saltRounds, "aA1!");
-    const hashPassword = await bcrypt.hash(req.body.password, salt);
-
-    user.password = hashPassword;
-    user.isLocked = false;
-    user.loginAttempts = 0;
-
-    // Mark all password reset tokens as used
-    user.tokens.forEach((token) => {
-      if (token.type === "passwordResetToken" && !token.used) {
-        token.used = true;
-        token.usedDate = Date.now();
+    if (emailVerificationVerified) {
+      if (emailVerificationVerified.verified) {
+        return res.status(400).json({ message: "Email already verified" });
       }
+    }
+
+    const emailVerificationToken = user.tokens.find(
+      (token) => token.type === "emailVerification"
+    );
+
+    if (emailVerificationToken) {
+      if (emailVerificationToken.used) {
+        return res.status(400).json({ message: "Email already verified" });
+      }
+      if (emailVerificationToken.expiresAt > Date.now()) {
+        return res.status(400).json({ message: "Check your email" });
+      }
+    }
+
+    const emailToken = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET, {
+      expiresIn: "5m",
     });
 
-    const ipv6 = req.ip.toString();
-    let ipv4;
+    const convertedHash = emailToken.toString().replace(/\./g, "*");
 
-    if (ipv6 === "::1") {
-      ipv4 = "0000:0000:0000:0000:0000:0000:0000:0001";
+    const expiresAt = Date.now() + 300000; // Expires in 5 minutes
+    const tokenIndex = user.tokens.findIndex(
+      (t) => t.type === "emailVerification"
+    );
+    const verifiedIndex = user.verifications.findIndex(
+      (t) => t.type === "emailVerification"
+    );
+
+    if (verifiedIndex !== -1) {
+      // verified already exists, update it
+      user.verifications[verifiedIndex].verificationSentDate = new Date();
     } else {
-      ipv4 = ipaddr.process(ipv6).toString();
+      // verified does not exist, add it
+      user.verifications.push({
+        type: "emailVerification",
+        verificationSentDate: new Date(),
+      });
     }
 
-    await axios
-      .get(
-        `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
-      )
-      .then(async (response) => {
-        const mailOptions = {
-          from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
-          to: user.email,
-          subject: "Password Change Notification",
-          template: "changePasswordSuccess",
-          context: {
-            name: user.name,
-            countryName: response.data.country_name,
-            cityName: response.data.city_name,
-            ip: response.data.ip,
-            isProxy: response.data.is_proxy,
-            zipCode: response.data.zip_code,
-            emailId: generateId(24),
-          },
-        };
-        const emailSent = await sendMail(mailOptions);
-        if (!emailSent) {
-          console.log("[L MAILER] Failed to send account notification email");
-        } else {
-          console.log("[L MAILER] Account notification email sent");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
+    if (tokenIndex !== -1) {
+      // Token already exists, update it
+      user.tokens[tokenIndex].token = emailToken;
+      user.tokens[tokenIndex].expiresAt = expiresAt;
+    } else {
+      // Token does not exist, add it
+      user.tokens.push({
+        type: "emailVerification",
+        token: emailToken,
+        expiresAt: expiresAt,
       });
+    }
 
-    // Save the updated user
+    const verificationURL = `${
+      global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
+    }/api/verify/${convertedHash}`;
+
+    // Send email verification email
+    const mailOptions = {
+      from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
+      to: user.email,
+      subject: "Verify your email",
+      template: "main",
+      attachments: [
+        {
+          filename: "app-ico-image.png",
+          path: "./emails/images/app-ico-image.png",
+          cid: "imageURL",
+        },
+      ],
+      context: {
+        name: user.name,
+        url: verificationURL,
+        emailId: generateId(24),
+      },
+    };
+    const emailSent = await sendMail(mailOptions);
+    if (!emailSent) {
+      return res
+        .status(400)
+        .json({ error: "Failed to send verification email" });
+    }
     await user.save();
-
-    return res.status(200).json({ message: "Password updated successfully" });
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: "Server error" });
+    res.status(200).json({ message: "Verification email sent" });
+  } catch (err) {
+    console.error(`[MAILER  ] ${err}`);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
+
+//CHANGE PASSWORD
+router.patch(
+  "/:userId/change-password/:token",
+  verifyTokenRendered,
+  async (req, res) => {
+    try {
+      //VALIDATION OF DATA
+      const { error } = passwordValidation(req.body);
+      if (error)
+        return res.status(400).json({ error: error.details[0].message });
+
+      const tokenValue = req.params.token.replace(/\*/g, ".");
+
+      User.findOne(
+        { "tokens.token": tokenValue, "tokens.type": "passwordResetToken" },
+        async (err, user) => {
+          if (err) {
+            res.render("layouts/main", {
+              pageTitle: "Error",
+              appTitle: "Task Tracker",
+              cardTitle: "Change Password",
+              cardContent: "Error finding user",
+              contentState: "error",
+            });
+          } else if (!user) {
+            res.render("layouts/main", {
+              pageTitle: "Error",
+              appTitle: "Task Tracker",
+              cardTitle: "Change Password",
+              cardContent: "User not found",
+              contentState: "error",
+            });
+          } else {
+            const tokenIndex = user.tokens.findIndex(
+              (t) => t.token === tokenValue
+            );
+            const tokenObj = user.tokens[tokenIndex];
+
+            if (!tokenObj) {
+              res.render("layouts/main", {
+                pageTitle: "Error",
+                appTitle: "Task Tracker",
+                cardTitle: "Change Password",
+                cardContent: "Token not found",
+                contentState: "error",
+              });
+            } else if (tokenObj.token !== tokenValue) {
+              res.render("layouts/main", {
+                pageTitle: "Error",
+                appTitle: "Task Tracker",
+                cardTitle: "Change Password",
+                cardContent: "Invalid use of token",
+                contentState: "error",
+              });
+            } else if (tokenObj.used) {
+              res.render("layouts/main", {
+                pageTitle: "Error",
+                appTitle: "Task Tracker",
+                cardTitle: "Change Password",
+                cardContent: "Request new url",
+                contentState: "error",
+              });
+            } else if (tokenObj.expiresAt < new Date()) {
+              res.render("layouts/main", {
+                pageTitle: "Error",
+                appTitle: "Task Tracker",
+                cardTitle: "Change Password",
+                cardContent: "Token expired",
+                contentState: "error",
+              });
+            } else {
+              if (!req.body.password) {
+                return res.status(400).json({ error: "Password is required" });
+              }
+
+              //HASH PASSWORDS
+              const saltRounds = 10;
+              const salt = bcrypt.genSaltSync(saltRounds, "aA1!");
+              const hashPassword = await bcrypt.hash(req.body.password, salt);
+
+              user.password = hashPassword;
+              user.isLocked = false;
+              user.loginAttempts = 0;
+
+              user.tokens.forEach((token) => {
+                if (token.type === "passwordResetToken" && !token.used) {
+                  token.used = true;
+                  token.usedDate = Date.now();
+                }
+              });
+
+              const ipv6 = req.ip.toString();
+              let ipv4;
+
+              if (ipv6 === "::1") {
+                ipv4 = "0000:0000:0000:0000:0000:0000:0000:0001";
+              } else {
+                ipv4 = ipaddr.process(ipv6).toString();
+              }
+
+              await axios
+                .get(
+                  `https://api.ip2location.io/?key=${process.env.IP2_API_KEY}&ip=${ipv4}`
+                )
+                .then(async (response) => {
+                  const mailOptions = {
+                    from: `Task Tracker <${process.env.NODE_MAILER_EMAIL}>`,
+                    to: user.email,
+                    subject: "Password Change Notification",
+                    template: "changePasswordSuccess",
+                    context: {
+                      name: user.name,
+                      countryName: response.data.country_name,
+                      cityName: response.data.city_name,
+                      ip: response.data.ip,
+                      isProxy: response.data.is_proxy,
+                      zipCode: response.data.zip_code,
+                      emailId: generateId(24),
+                    },
+                  };
+                  const emailSent = await sendMail(mailOptions);
+                  if (!emailSent) {
+                    console.log(
+                      "[L MAILER] Failed to send account notification email"
+                    );
+                  } else {
+                    console.log("[L MAILER] Account notification email sent");
+                  }
+                })
+                .catch((error) => {
+                  console.error(error);
+                });
+              await user.save();
+              const redirectUrl = `${
+                global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
+              }/api/login/identify`;
+              return res
+                .status(200)
+                .json({ message: "Password updated successfully", redirectUrl: redirectUrl });
+            }
+          }
+        }
+      );
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ error: "Server error" });
+    }
+  }
+);
 
 module.exports = router;

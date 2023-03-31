@@ -18,6 +18,7 @@ router.get(process.env.REDIRECT_URI, (req, res) => {
   //CREATAE A METHOD TO GETTOKENS and STORE IT to the user's db
 });
 
+//VERIFY EMAIL FLOW
 router.get("/verify/:token", verifyTokenRendered, async (req, res) => {
   const tokenValue = req.params.token.replace(/\*/g, ".");
 
@@ -111,7 +112,8 @@ router.get("/verify/:token", verifyTokenRendered, async (req, res) => {
   );
 });
 
-//1st STEP ENTER EMAIL rendered
+//CHANGE PASSWORD FLOW
+//1st step enter email rendered
 router.get("/login/identify", (req, res) => {
   const verificationURL = `${
     global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
@@ -123,7 +125,7 @@ router.get("/login/identify", (req, res) => {
   });
 });
 
-//2nd STEP Send email
+//2nd step send email
 router.post("/send-email-password-change", async (req, res) => {
   //VALIDATION OF DATA
   const { error } = emailValidation(req.body);
@@ -235,7 +237,7 @@ router.post("/send-email-password-change", async (req, res) => {
   }
 });
 
-//3rd STEP Render 6-digit page
+//3rd step render 6-digit page
 router.get(
   "/password-change/:token/enter-code",
   verifyTokenRendered,
@@ -252,6 +254,7 @@ router.get(
   }
 );
 
+//4th step confirm code
 router.post(
   "/verify-code/:token/verify",
   verifyTokenRendered,
@@ -300,6 +303,7 @@ router.post(
   }
 );
 
+//5th step render the change password page
 router.get(
   "/verify/:token/change-password",
   verifyTokenRendered,
@@ -334,12 +338,11 @@ router.get(
 
           const verificationURL = `${
             global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
-          }/user/${user._id}/change-password`;
+          }/user/${user._id}/change-password/${req.params.token}`;
+
           //GENERATE API KEY AND HMAC
           const currentTimestamp = Date.now();
-
           const data = `${currentTimestamp}/${verificationURL}`;
-
           const apiKey = process.env.API_KEY;
           const secret = process.env.API_SECRET;
 

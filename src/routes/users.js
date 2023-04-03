@@ -539,10 +539,10 @@ router.patch(
                   const emailSent = await sendMail(mailOptions);
                   if (!emailSent) {
                     console.log(
-                      "[L MAILER] Failed to send account notification email"
+                      "[L MAILER] Failed to send account change password notification email"
                     );
                   } else {
-                    console.log("[L MAILER] Account notification email sent");
+                    console.log("[L MAILER] Account password notification email sent");
                   }
                 })
                 .catch((error) => {

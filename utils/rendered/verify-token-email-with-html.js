@@ -7,6 +7,7 @@ module.exports = function (req, res, next) {
     req.user = decoded;
     next();
   } catch (err) {
+    
     if (err.name === "TokenExpiredError") {
       return res.render("layouts/main", {
         pageTitle: "Error",
@@ -16,6 +17,7 @@ module.exports = function (req, res, next) {
         contentState: "error",
       });
     }
+
     return res.render("layouts/main", {
       pageTitle: "Error",
       appTitle: "Task Tracker",

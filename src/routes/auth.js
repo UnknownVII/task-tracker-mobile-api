@@ -136,29 +136,45 @@ router.post("/send-email-password-change", async (req, res) => {
   if (!user) return res.status(400).json({ error: "Email does not exist!" });
 
   try {
+    // CHECK IF PASSWORD RESET TOKEN EXISTS AND HAS NOT BEEN USED
     const passwordResetToken = user.tokens.find(
       (token) => token.type === "passwordResetToken"
     );
-
-    if (passwordResetToken) {
-      if (passwordResetToken.expiresAt > Date.now() && !passwordResetToken.used) {
-        return res
-          .status(400)
-          .json({ error: "Email already sent. Check your email [01]" });
-      }
-    }
 
     const passwordResetDigit = user.tokens.find(
       (token) => token.type === "passwordResetDigit"
     );
 
-    if (passwordResetDigit) {
-      if (passwordResetDigit.expiresAt > Date.now() && !passwordResetDigit.used) {
-        return res
-          .status(400)
-          .json({ error: "Email already sent. Check your email [02]" });
-      }
+    if (
+      (passwordResetToken &&
+        passwordResetToken.expiresAt > Date.now() &&
+        !passwordResetToken.used) ||
+      (passwordResetDigit &&
+        passwordResetDigit.expiresAt > Date.now() &&
+        !passwordResetDigit.used)
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Email already sent. Check your email." });
     }
+
+    // Remove existing password reset tokens
+    user.tokens = user.tokens.filter(
+      (token) =>
+        token.type !== "passwordResetToken" &&
+        token.type !== "passwordResetDigit"
+    );
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $pull: {
+          tokens: {
+            type: { $in: ["passwordResetToken", "passwordResetDigit"] },
+          },
+        },
+      }
+    );
+
     const expiresAt = Date.now() + 10 * 60 * 1000;
     const passResetToken = jwt.sign(
       { _id: user._id },
@@ -241,16 +257,48 @@ router.post("/send-email-password-change", async (req, res) => {
 router.get(
   "/password-change/:token/enter-code",
   verifyTokenRendered,
-  (req, res) => {
+  async (req, res) => {
     const encodedEmail = req.query.email;
     const passResetToken = req.params.token;
     const email = decodeURIComponent(encodedEmail);
     const convertedHash = passResetToken.toString().replace(/\./g, "*");
+    const tokenValue = req.params.token.replace(/\*/g, ".");
     const urlLink = `${
       global.isLocal ? process.env.LOCAL_URL : process.env.CLOUD_URL
     }/api/verify-code/${convertedHash}/verify?email=${encodedEmail}`;
-    // Render the enter code page with the decoded email value
-    res.render("passwordLayout/6Digit", { layout: false, email, urlLink });
+
+    try {
+      const user = await User.findOne({
+        email,
+        "tokens.token": tokenValue,
+        "tokens.type": "passwordResetToken",
+        "tokens.used": false,
+      }).exec();
+
+      if (!user) {
+        // If the user cannot be found or the token has been used, render the error page
+        return res.render("layouts/main", {
+          pageTitle: "Error",
+          appTitle: "Task Tracker",
+          cardTitle: "Invalid Access",
+          cardContent: "Access token has expired",
+          contentState: "error",
+        });
+      }
+
+      // Render the enter code page with the decoded email value
+      res.render("passwordLayout/6Digit", { layout: false, email, urlLink });
+    } catch (err) {
+      // Handle any errors that occur during the database query
+      console.error(err);
+      res.render("layouts/main", {
+        pageTitle: "Error",
+        appTitle: "Task Tracker",
+        cardTitle: "Server Error",
+        cardContent: `An error occurred while processing your request. ${err}`,
+        contentState: "error",
+      });
+    }
   }
 );
 

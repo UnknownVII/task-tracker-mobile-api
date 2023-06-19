@@ -213,7 +213,7 @@ router.post("/login", async (req, res) => {
       res.status(500).send({ error: "Internal server error" });
     } else {
       res.status(200).json({
-        "auth-token": accessToken,
+        auth_token: accessToken,
         message: "Logged in successfully",
         name: user.name,
         _id: user._id,
